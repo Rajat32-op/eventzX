@@ -13,6 +13,8 @@ import Profile from "./pages/Profile";
 import Discover from "./pages/Discover";
 import Communities from "./pages/Communities";
 import UserProfile from "./pages/UserProfile";
+import Chat from "./pages/Chat";
+import ChatRoom from "./pages/ChatRoom";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +61,16 @@ const App = () => (
             <Route path="/user/:userId" element={
               <ProtectedRoute>
                 <UserProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat" element={
+              <ProtectedRoute>
+                <Chat />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat/:type/:id" element={
+              <ProtectedRoute>
+                <ChatRoom />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

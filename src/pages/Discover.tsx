@@ -5,96 +5,38 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, UserPlus, Check, GraduationCap, MapPin, Sparkles } from "lucide-react";
+import { Search, UserPlus, Check, GraduationCap, MapPin, Sparkles, Loader2, UserCheck, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-
-const suggestedUsers = [
-  {
-    id: "1",
-    name: "Arjun Sharma",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=arjun",
-    college: "IIT Hyderabad",
-    city: "Hyderabad",
-    interests: ["Meditation", "Yoga", "Temple Visits"],
-    bio: "Seeking inner peace through daily meditation practice",
-    requestSent: false,
-  },
-  {
-    id: "2",
-    name: "Priya Menon",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=priya",
-    college: "IIT Hyderabad",
-    city: "Hyderabad",
-    interests: ["Yoga", "Nature Walks", "Discussion"],
-    bio: "Yoga enthusiast, love meaningful conversations",
-    requestSent: false,
-  },
-  {
-    id: "3",
-    name: "Rahul Verma",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=rahul",
-    college: "IIT Madras",
-    city: "Chennai",
-    interests: ["Church Visit", "Meditation", "Discussion"],
-    bio: "Finding spirituality in everyday moments",
-    requestSent: false,
-  },
-  {
-    id: "4",
-    name: "Fatima Khan",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=fatima",
-    college: "IIT Delhi",
-    city: "Delhi",
-    interests: ["Mosque Visit", "Meditation", "Nature Walks"],
-    bio: "Exploring different spiritual paths",
-    requestSent: false,
-  },
-  {
-    id: "5",
-    name: "Aditya Patel",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=aditya",
-    college: "IIT Bombay",
-    city: "Mumbai",
-    interests: ["Temple Visits", "Yoga", "Discussion"],
-    bio: "On a journey of self-discovery",
-    requestSent: false,
-  },
-  {
-    id: "6",
-    name: "Sara Joseph",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=sara",
-    college: "IIT Kanpur",
-    city: "Kanpur",
-    interests: ["Church Visit", "Nature Walks", "Meditation"],
-    bio: "Faith, nature, and community",
-    requestSent: false,
-  },
-];
+import { useFriendRequests } from "@/hooks/useFriendRequests";
 
 export default function Discover() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [users, setUsers] = useState(suggestedUsers);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    profiles,
+    sentRequests,
+    receivedRequests,
+    friends,
+    loading,
+    sendRequest,
+    acceptRequest,
+    rejectRequest,
+  } = useFriendRequests();
 
-  const handleSendRequest = (userId: string) => {
-    setUsers(users.map(user => 
-      user.id === userId ? { ...user, requestSent: true } : user
-    ));
-    toast({
-      title: "Request Sent! 🙏",
-      description: "They'll be notified about your connection request.",
-    });
-  };
-
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.college.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.interests.some(interest => 
-      interest.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+  const filteredProfiles = profiles.filter(
+    (profile) =>
+      profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (profile.college?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      profile.interests.some((interest) =>
+        interest.toLowerCase().includes(searchQuery.toLowerCase())
+      )
   );
+
+  const getConnectionStatus = (userId: string) => {
+    if (friends.includes(userId)) return "connected";
+    if (sentRequests.includes(userId)) return "pending";
+    return "none";
+  };
 
   return (
     <AppLayout>
@@ -130,96 +72,185 @@ export default function Discover() {
 
       {/* Content */}
       <div className="container px-4 py-6 space-y-4">
+        {/* Pending Requests */}
+        {receivedRequests.length > 0 && (
+          <section className="mb-6">
+            <h2 className="font-display font-semibold text-foreground mb-3">
+              Connection Requests ({receivedRequests.length})
+            </h2>
+            <div className="space-y-3">
+              {receivedRequests.map((request) => (
+                <Card
+                  key={request.id}
+                  className="border-secondary/50 bg-secondary/5"
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-12 h-12 border-2 border-secondary/20">
+                        <AvatarImage
+                          src={
+                            request.sender?.avatar_url ||
+                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${request.sender?.name}`
+                          }
+                        />
+                        <AvatarFallback className="bg-secondary/20 text-secondary">
+                          {request.sender?.name?.charAt(0) || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-display font-semibold text-foreground">
+                          {request.sender?.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          {request.sender?.college}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            acceptRequest(request.id, request.sender_id)
+                          }
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => rejectRequest(request.id)}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Suggested Section */}
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-display font-semibold text-foreground">
             Suggested for You
           </h2>
           <span className="text-xs text-muted-foreground">
-            {filteredUsers.length} people
+            {filteredProfiles.length} people
           </span>
         </div>
 
         {/* User Cards */}
-        <div className="space-y-3">
-          {filteredUsers.map((user, index) => (
-            <Card 
-              key={user.id}
-              className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:glow-primary animate-fade-up cursor-pointer"
-              style={{ animationDelay: `${index * 0.1}s` }}
-              onClick={() => navigate(`/user/${user.id}`)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <Avatar className="w-16 h-16 border-2 border-primary/20">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="bg-primary/20 text-primary text-lg">
-                      {user.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredProfiles.map((profile, index) => {
+              const status = getConnectionStatus(profile.id);
+              return (
+                <Card
+                  key={profile.id}
+                  className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:glow-primary animate-fade-up cursor-pointer"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                  onClick={() => navigate(`/user/${profile.id}`)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <Avatar className="w-16 h-16 border-2 border-primary/20">
+                        <AvatarImage
+                          src={
+                            profile.avatar_url ||
+                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`
+                          }
+                        />
+                        <AvatarFallback className="bg-primary/20 text-primary text-lg">
+                          {profile.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
 
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-display font-semibold text-foreground">
-                      {user.name}
-                    </h3>
-                    
-                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <GraduationCap className="w-3.5 h-3.5 text-primary" />
-                        <span>{user.college}</span>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-display font-semibold text-foreground">
+                          {profile.name}
+                        </h3>
+
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          {profile.college && (
+                            <div className="flex items-center gap-1">
+                              <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                              <span>{profile.college}</span>
+                            </div>
+                          )}
+                          {profile.city && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5 text-accent" />
+                              <span>{profile.city}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {profile.bio && (
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
+                            {profile.bio}
+                          </p>
+                        )}
+
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {profile.interests.slice(0, 3).map((interest) => (
+                            <Badge
+                              key={interest}
+                              variant="interest"
+                              className="text-xs"
+                            >
+                              {interest}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-accent" />
-                        <span>{user.city}</span>
-                      </div>
+
+                      <Button
+                        variant={status !== "none" ? "outline" : "default"}
+                        size="sm"
+                        className="shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (status === "none") {
+                            sendRequest(profile.id);
+                          }
+                        }}
+                        disabled={status !== "none"}
+                      >
+                        {status === "connected" ? (
+                          <>
+                            <UserCheck className="w-4 h-4 mr-1" />
+                            Connected
+                          </>
+                        ) : status === "pending" ? (
+                          <>
+                            <Clock className="w-4 h-4 mr-1" />
+                            Pending
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4 mr-1" />
+                            Connect
+                          </>
+                        )}
+                      </Button>
                     </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-                    <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
-                      {user.bio}
-                    </p>
-
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {user.interests.slice(0, 3).map((interest) => (
-                        <Badge key={interest} variant="interest" className="text-xs">
-                          {interest}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button
-                    variant={user.requestSent ? "outline" : "default"}
-                    size="sm"
-                    className="shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!user.requestSent) {
-                        handleSendRequest(user.id);
-                      }
-                    }}
-                    disabled={user.requestSent}
-                  >
-                    {user.requestSent ? (
-                      <>
-                        <Check className="w-4 h-4 mr-1" />
-                        Sent
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4 mr-1" />
-                        Connect
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {filteredUsers.length === 0 && (
+        {!loading && filteredProfiles.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No users found matching your search.</p>
+            <p className="text-muted-foreground">
+              No users found matching your search.
+            </p>
           </div>
         )}
 
@@ -230,11 +261,10 @@ export default function Discover() {
               Invite Friends
             </h3>
             <p className="text-foreground/80 text-sm mb-4">
-              Know someone who'd love InnerCircle? Share the app and grow your spiritual network.
+              Know someone who'd love InnerCircle? Share the app and grow your
+              spiritual network.
             </p>
-            <Button variant="glass">
-              Share InnerCircle
-            </Button>
+            <Button variant="glass">Share InnerCircle</Button>
             <div className="absolute top-0 right-0 w-24 h-24 bg-accent/20 rounded-full blur-2xl" />
           </CardContent>
         </Card>
