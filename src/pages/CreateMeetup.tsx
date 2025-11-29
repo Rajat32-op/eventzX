@@ -7,13 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ArrowLeft, Sparkles, MapPin, Clock, Users, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,11 +14,11 @@ const meetupTypes = [
   { id: "meditation", name: "Meditation", emoji: "🧘" },
   { id: "yoga", name: "Yoga", emoji: "🪷" },
   { id: "temple", name: "Temple Visit", emoji: "🛕" },
-  { id: "gita", name: "Gita Reading", emoji: "📖" },
+  { id: "church", name: "Church Visit", emoji: "⛪" },
+  { id: "mosque", name: "Mosque Visit", emoji: "🕌" },
   { id: "walk", name: "Nature Walk", emoji: "🌿" },
-  { id: "satsang", name: "Satsang", emoji: "🪔" },
-  { id: "kirtan", name: "Kirtan", emoji: "🎵" },
   { id: "discussion", name: "Discussion", emoji: "💬" },
+  { id: "other", name: "Other", emoji: "✨" },
 ];
 
 export default function CreateMeetup() {
@@ -174,23 +167,20 @@ export default function CreateMeetup() {
                 <Label htmlFor="maxAttendees">Max Attendees (optional)</Label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Select
+                  <Input
+                    id="maxAttendees"
+                    type="number"
+                    min="2"
+                    max="500"
+                    placeholder="No limit (leave empty)"
+                    className="pl-10"
                     value={maxAttendees}
-                    onValueChange={setMaxAttendees}
-                  >
-                    <SelectTrigger className="pl-10">
-                      <SelectValue placeholder="No limit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5 people</SelectItem>
-                      <SelectItem value="10">10 people</SelectItem>
-                      <SelectItem value="15">15 people</SelectItem>
-                      <SelectItem value="20">20 people</SelectItem>
-                      <SelectItem value="30">30 people</SelectItem>
-                      <SelectItem value="50">50 people</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setMaxAttendees(e.target.value)}
+                  />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Leave empty for unlimited attendees
+                </p>
               </div>
 
               {/* Submit */}
