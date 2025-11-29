@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Sparkles, MapPin, Clock, Users, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const meetupTypes = [
   { id: "meditation", name: "Meditation", emoji: "🧘" },
@@ -29,16 +31,52 @@ export default function CreateMeetup() {
   const [date, setDate] = useState("");
   const [category, setCategory] = useState("");
   const [maxAttendees, setMaxAttendees] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Meetup Created! 🎉",
-      description: "Your spiritual meetup is now live. Others can join!",
+    
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be signed in to create a meetup.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    const { error } = await supabase.from("meetups").insert({
+      creator_id: user.id,
+      title,
+      description,
+      category,
+      location,
+      date,
+      time,
+      max_attendees: maxAttendees ? parseInt(maxAttendees) : null,
     });
-    navigate("/");
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Error creating meetup",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Meetup Created! 🎉",
+        description: "Your spiritual meetup is now live. Others can join!",
+      });
+      navigate("/");
+    }
   };
 
   return (
@@ -189,10 +227,16 @@ export default function CreateMeetup() {
                 size="lg"
                 className="w-full"
                 type="submit"
-                disabled={!title || !description || !location || !date || !time || !category}
+                disabled={isLoading || !title || !description || !location || !date || !time || !category}
               >
-                <Send className="w-5 h-5 mr-2" />
-                Create Meetup
+                {isLoading ? (
+                  "Creating..."
+                ) : (
+                  <>
+                    <Send className="w-5 h-5 mr-2" />
+                    Create Meetup
+                  </>
+                )}
               </Button>
             </form>
           </CardContent>
