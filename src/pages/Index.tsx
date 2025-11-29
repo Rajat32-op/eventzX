@@ -9,6 +9,8 @@ import { Search, MapPin, Sparkles, Bell, Filter } from "lucide-react";
 import { mockMeetups } from "@/data/mockData";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const categories = [
   { id: "all", name: "All" },
@@ -24,6 +26,8 @@ export default function Index() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [joinedMeetups, setJoinedMeetups] = useState<string[]>([]);
   const { toast } = useToast();
+  const { profile } = useAuth();
+  const navigate = useNavigate();
 
   const handleJoin = (meetupId: string, title: string) => {
     if (joinedMeetups.includes(meetupId)) {
@@ -65,7 +69,7 @@ export default function Index() {
                 </h1>
                 <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
                   <MapPin className="w-3 h-3" />
-                  IIT Hyderabad
+                  {profile?.college || "Select Campus"}
                 </button>
               </div>
             </div>
@@ -76,9 +80,12 @@ export default function Index() {
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full" />
               </Button>
-              <Avatar className="w-9 h-9 border-2 border-primary/30">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aryan" />
-                <AvatarFallback>AG</AvatarFallback>
+              <Avatar 
+                className="w-9 h-9 border-2 border-primary/30 cursor-pointer"
+                onClick={() => navigate("/profile")}
+              >
+                <AvatarImage src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.name}`} />
+                <AvatarFallback>{profile?.name?.charAt(0) || "U"}</AvatarFallback>
               </Avatar>
             </div>
           </div>
@@ -106,7 +113,7 @@ export default function Index() {
               Campus Feed
             </TabsTrigger>
             <TabsTrigger value="city" className="font-display">
-              Hyderabad Circle
+              {profile?.city || "City"} Circle
             </TabsTrigger>
           </TabsList>
 

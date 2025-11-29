@@ -1,157 +1,114 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Sparkles, Mail, Lock, ArrowRight, Users, Heart, Compass } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { colleges, interests } from "@/data/colleges";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import { Sparkles, Mail, Lock, User, ArrowRight, Users, Heart, Compass } from "lucide-react";
+import { z } from "zod";
+
+const emailSchema = z.string().email("Please enter a valid email address");
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const nameSchema = z.string().min(2, "Name must be at least 2 characters");
 
 export default function Auth() {
-  const [step, setStep] = useState<"login" | "signup" | "onboarding">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [selectedCollege, setSelectedCollege] = useState("");
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string }>({});
+  
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const { user, signIn, signUp } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
+
+  useEffect(() => {
+    if (user) {
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, from]);
+
+  const validateForm = (isSignUp: boolean) => {
+    const newErrors: { email?: string; password?: string; name?: string } = {};
+
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      newErrors.email = emailResult.error.errors[0].message;
+    }
+
+    const passwordResult = passwordSchema.safeParse(password);
+    if (!passwordResult.success) {
+      newErrors.password = passwordResult.error.errors[0].message;
+    }
+
+    if (isSignUp) {
+      const nameResult = nameSchema.safeParse(name);
+      if (!nameResult.success) {
+        newErrors.name = nameResult.error.errors[0].message;
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For MVP, skip auth and go to home
-    navigate("/");
-    toast({
-      title: "Welcome back! 🙏",
-      description: "You've joined your campus spiritual circle.",
-    });
+    if (!validateForm(false)) return;
+    
+    setIsLoading(true);
+    const { error } = await signIn(email, password);
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Sign in failed",
+        description: error.message === "Invalid login credentials" 
+          ? "Invalid email or password. Please try again."
+          : error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Welcome back! 🙏",
+        description: "You've successfully signed in.",
+      });
+    }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep("onboarding");
+    if (!validateForm(true)) return;
+    
+    setIsLoading(true);
+    const { error } = await signUp(email, password, name);
+    setIsLoading(false);
+
+    if (error) {
+      const errorMessage = error.message.includes("already registered")
+        ? "This email is already registered. Please sign in instead."
+        : error.message;
+      
+      toast({
+        title: "Sign up failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Welcome to InnerCircle! 🎉",
+        description: "Your account has been created. Let's set up your profile!",
+      });
+      navigate("/onboarding");
+    }
   };
-
-  const toggleInterest = (interestId: string) => {
-    setSelectedInterests((prev) =>
-      prev.includes(interestId)
-        ? prev.filter((i) => i !== interestId)
-        : [...prev, interestId]
-    );
-  };
-
-  const handleComplete = () => {
-    navigate("/");
-    toast({
-      title: "Welcome to InnerCircle! ✨",
-      description: "You're now part of your campus spiritual community.",
-    });
-  };
-
-  if (step === "onboarding") {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        {/* Background effects */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-secondary/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="w-full max-w-2xl relative z-10 animate-fade-in">
-          <div className="text-center mb-8">
-            <h1 className="font-display text-3xl font-bold text-gradient mb-2">
-              Complete Your Profile
-            </h1>
-            <p className="text-muted-foreground">
-              Help us connect you with like-minded souls
-            </p>
-          </div>
-
-          <Card className="border-border/50">
-            <CardContent className="p-6 space-y-6">
-              {/* Name */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Your Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Enter your full name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-
-              {/* College Selection */}
-              <div className="space-y-2">
-                <Label>Your Campus</Label>
-                <Select value={selectedCollege} onValueChange={setSelectedCollege}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your college/university" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {colleges.map((college) => (
-                      <SelectItem key={college.id} value={college.id}>
-                        <span className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {college.type}
-                          </Badge>
-                          {college.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Interests */}
-              <div className="space-y-3">
-                <Label>Your Spiritual Interests</Label>
-                <p className="text-sm text-muted-foreground">
-                  Select what resonates with you (at least 3)
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {interests.map((interest) => (
-                    <Badge
-                      key={interest.id}
-                      variant={
-                        selectedInterests.includes(interest.id)
-                          ? "default"
-                          : "interest"
-                      }
-                      className="cursor-pointer text-sm py-2 px-3"
-                      onClick={() => toggleInterest(interest.id)}
-                    >
-                      <span className="mr-1.5">{interest.emoji}</span>
-                      {interest.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <Button
-                variant="glow"
-                size="lg"
-                className="w-full"
-                onClick={handleComplete}
-                disabled={!name || !selectedCollege || selectedInterests.length < 3}
-              >
-                Join Your Circle
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -204,66 +161,126 @@ export default function Auth() {
         {/* Auth Card */}
         <Card className="w-full max-w-md border-border/50 animate-fade-up" style={{ animationDelay: "0.2s" }}>
           <CardHeader className="text-center">
-            <CardTitle className="font-display text-2xl">
-              {step === "login" ? "Welcome Back" : "Join InnerCircle"}
-            </CardTitle>
+            <CardTitle className="font-display text-2xl">Welcome</CardTitle>
             <CardDescription>
-              {step === "login"
-                ? "Sign in with your college email"
-                : "Create account with your institute email"}
+              Sign in or create an account with your college email
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={step === "login" ? handleLogin : handleSignup} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">College Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="yourname@iith.ac.in"
-                    className="pl-10"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="signin" className="font-display">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="font-display">Sign Up</TabsTrigger>
+              </TabsList>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-10"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+              <TabsContent value="signin">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="your.email@college.edu"
+                        className="pl-10"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
+                    {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+                  </div>
 
-              <Button variant="glow" size="lg" className="w-full" type="submit">
-                {step === "login" ? "Sign In" : "Create Account"}
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </form>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                    </div>
+                    {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+                  </div>
 
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => setStep(step === "login" ? "signup" : "login")}
-              >
-                {step === "login"
-                  ? "New here? Create an account"
-                  : "Already have an account? Sign in"}
-              </button>
-            </div>
+                  <Button 
+                    type="submit" 
+                    variant="glow" 
+                    className="w-full" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Signing in..." : "Sign In"}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="signup">
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Full Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signup-name"
+                        type="text"
+                        placeholder="Your Name"
+                        className="pl-10"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                    </div>
+                    {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">College Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="your.email@college.edu"
+                        className="pl-10"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
+                    {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                    </div>
+                    {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    variant="glow" 
+                    className="w-full" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Creating account..." : "Join InnerCircle"}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

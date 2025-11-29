@@ -13,12 +13,27 @@ import {
   GraduationCap,
   LogOut,
 } from "lucide-react";
-import { mockUser, mockMeetups } from "@/data/mockData";
-import { MeetupCard } from "@/components/MeetupCard";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  if (!profile) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -51,9 +66,9 @@ export default function Profile() {
             {/* Avatar */}
             <div className="flex items-end justify-between -mt-12 mb-4">
               <Avatar className="w-24 h-24 border-4 border-card">
-                <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
+                <AvatarImage src={profile.avatar_url || undefined} alt={profile.name} />
                 <AvatarFallback className="text-2xl bg-primary/20 text-primary">
-                  {mockUser.name.charAt(0)}
+                  {profile.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <Button variant="outline" size="sm">
@@ -66,56 +81,64 @@ export default function Profile() {
             <div className="space-y-3">
               <div>
                 <h2 className="font-display text-2xl font-bold text-foreground">
-                  {mockUser.name}
+                  {profile.name}
                 </h2>
-                <p className="text-muted-foreground text-sm">{mockUser.email}</p>
+                <p className="text-muted-foreground text-sm">{profile.email}</p>
               </div>
 
               {/* Meta */}
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4 text-primary" />
-                  <span>{mockUser.college}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-accent" />
-                  <span>{mockUser.city}</span>
-                </div>
+                {profile.college && (
+                  <div className="flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4 text-primary" />
+                    <span>{profile.college}</span>
+                  </div>
+                )}
+                {profile.city && (
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-accent" />
+                    <span>{profile.city}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-secondary" />
-                  <span>Joined {mockUser.joinedDate}</span>
+                  <span>Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
                 </div>
               </div>
 
               {/* Bio */}
-              <p className="text-foreground">{mockUser.bio}</p>
+              {profile.bio && (
+                <p className="text-foreground">{profile.bio}</p>
+              )}
 
               {/* Interests */}
-              <div className="flex flex-wrap gap-2">
-                {mockUser.interests.map((interest) => (
-                  <Badge key={interest} variant="interest">
-                    {interest}
-                  </Badge>
-                ))}
-              </div>
+              {profile.interests && profile.interests.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {profile.interests.map((interest) => (
+                    <Badge key={interest} variant="interest">
+                      {interest}
+                    </Badge>
+                  ))}
+                </div>
+              )}
 
               {/* Stats */}
               <div className="flex gap-6 pt-4 border-t border-border">
                 <div className="text-center">
                   <p className="font-display text-2xl font-bold text-foreground">
-                    {mockUser.meetupsCreated}
+                    0
                   </p>
                   <p className="text-xs text-muted-foreground">Created</p>
                 </div>
                 <div className="text-center">
                   <p className="font-display text-2xl font-bold text-foreground">
-                    {mockUser.meetupsJoined}
+                    0
                   </p>
                   <p className="text-xs text-muted-foreground">Joined</p>
                 </div>
                 <div className="text-center">
                   <p className="font-display text-2xl font-bold text-primary">
-                    17
+                    0
                   </p>
                   <p className="text-xs text-muted-foreground">Connections</p>
                 </div>
@@ -138,35 +161,43 @@ export default function Profile() {
           </TabsList>
 
           <TabsContent value="created" className="mt-0 space-y-4">
-            {mockMeetups.slice(0, 2).map((meetup, index) => (
-              <div
-                key={meetup.id}
-                className="animate-fade-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <MeetupCard {...meetup} />
-              </div>
-            ))}
+            <div className="text-center py-8 text-muted-foreground">
+              <p>You haven't created any meetups yet.</p>
+              <Button variant="outline" className="mt-4" onClick={() => navigate("/create")}>
+                Create Your First Meetup
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="joined" className="mt-0 space-y-4">
-            {mockMeetups.slice(2, 5).map((meetup, index) => (
-              <div
-                key={meetup.id}
-                className="animate-fade-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <MeetupCard {...meetup} isJoined />
-              </div>
-            ))}
+            <div className="text-center py-8 text-muted-foreground">
+              <p>You haven't joined any meetups yet.</p>
+              <Button variant="outline" className="mt-4" onClick={() => navigate("/")}>
+                Discover Meetups
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
+
+        {/* Spiritual Journey */}
+        {profile.journey && (
+          <Card className="border-border/50 mb-6">
+            <CardContent className="p-6">
+              <h3 className="font-display font-semibold text-lg text-foreground mb-3">
+                My Spiritual Journey
+              </h3>
+              <p className="text-foreground/80 leading-relaxed">
+                {profile.journey}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Logout */}
         <Button
           variant="ghost"
           className="w-full text-muted-foreground hover:text-destructive"
-          onClick={() => navigate("/auth")}
+          onClick={handleSignOut}
         >
           <LogOut className="w-4 h-4 mr-2" />
           Sign Out
