@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, UserPlus, Check, GraduationCap, MapPin, Sparkles, Loader2, UserCheck, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFriendRequests } from "@/hooks/useFriendRequests";
+import { dummyProfiles } from "@/data/dummyData";
 
 export default function Discover() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,7 +24,10 @@ export default function Discover() {
     rejectRequest,
   } = useFriendRequests();
 
-  const filteredProfiles = profiles.filter(
+  // Use dummy data if no real profiles exist
+  const displayProfiles = profiles.length > 0 ? profiles : dummyProfiles;
+
+  const filteredProfiles = displayProfiles.filter(
     (profile) =>
       profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (profile.college?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
