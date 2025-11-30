@@ -15,8 +15,8 @@ export default function Chat() {
   const { conversations, loading } = useMessages();
   const navigate = useNavigate();
 
-  // Use dummy data if no real conversations exist
-  const displayConversations = conversations.length > 0 ? conversations : dummyConversations;
+  // Always show dummy data alongside real conversations
+  const displayConversations = [...conversations, ...dummyConversations];
 
   const filteredConversations = displayConversations.filter((conv) =>
     conv.name.toLowerCase().includes(searchQuery.toLowerCase())

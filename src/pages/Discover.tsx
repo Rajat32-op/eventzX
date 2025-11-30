@@ -24,8 +24,8 @@ export default function Discover() {
     rejectRequest,
   } = useFriendRequests();
 
-  // Use dummy data if no real profiles exist
-  const displayProfiles = profiles.length > 0 ? profiles : dummyProfiles;
+  // Always show dummy data alongside real profiles
+  const displayProfiles = [...profiles, ...dummyProfiles];
 
   const filteredProfiles = displayProfiles.filter(
     (profile) =>
