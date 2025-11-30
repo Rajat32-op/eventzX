@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,15 @@ import { dummyConversations } from "@/data/dummyData";
 
 export default function Chat() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { conversations, loading } = useMessages();
+  const { conversations, loading, refetchConversations } = useMessages();
   const navigate = useNavigate();
+
+  // Refetch conversations when component mounts to get latest unread counts
+  useEffect(() => {
+    if (refetchConversations) {
+      refetchConversations();
+    }
+  }, [refetchConversations]);
 
   // Append dummy data at the end (for demo purposes)
   const displayConversations = [...conversations, ...dummyConversations];
@@ -117,8 +124,8 @@ export default function Chat() {
                   </div>
 
                   {conversation.unread_count > 0 && (
-                    <Badge className="bg-primary text-foreground">
-                      {conversation.unread_count}
+                    <Badge className="bg-primary text-foreground shrink-0">
+                      {conversation.unread_count > 5 ? '5+' : conversation.unread_count}
                     </Badge>
                   )}
                 </div>

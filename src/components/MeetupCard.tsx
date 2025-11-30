@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface MeetupCardProps {
+interface MeetupCardPropsIndividual {
   title: string;
   description: string;
   time: string;
@@ -21,18 +21,45 @@ interface MeetupCardProps {
   isJoined?: boolean;
 }
 
-export function MeetupCard({
-  title,
-  description,
-  time,
-  location,
-  category,
-  host,
-  attendees,
-  maxAttendees,
-  onJoin,
-  isJoined = false,
-}: MeetupCardProps) {
+interface MeetupCardPropsObject {
+  meetup: any;
+}
+
+type MeetupCardProps = MeetupCardPropsIndividual | MeetupCardPropsObject;
+
+function formatMeetupTime(date: string, time: string) {
+  const meetupDate = new Date(date + 'T' + time);
+  return meetupDate.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+export function MeetupCard(props: MeetupCardProps) {
+  // Check if we received a meetup object or individual props
+  let title, description, time, location, category, host, attendees, maxAttendees, onJoin, isJoined;
+  
+  if ('meetup' in props) {
+    const { meetup } = props;
+    title = meetup.title;
+    description = meetup.description;
+    time = formatMeetupTime(meetup.date, meetup.time);
+    location = meetup.location;
+    category = meetup.category;
+    host = {
+      name: meetup.creator?.name || 'Unknown',
+      avatar: meetup.creator?.avatar_url,
+      college: meetup.creator?.college || 'Unknown'
+    };
+    attendees = meetup.meetup_attendees?.[0]?.count || 0;
+    maxAttendees = meetup.max_attendees;
+    onJoin = undefined;
+    isJoined = false;
+  } else {
+    ({ title, description, time, location, category, host, attendees, maxAttendees, onJoin, isJoined = false } = props);
+  }
   return (
     <Card className="hover:border-primary/50 transition-all duration-300 hover:glow-primary overflow-hidden group">
       <CardContent className="p-5">

@@ -20,7 +20,7 @@ export default function ChatRoom() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const isCommunity = type === "community";
-  const { messages, loading, hasMore, sendMessage: sendMsg, loadMoreMessages } = useMessages(
+  const { messages, loading, hasMore, sendMessage: sendMsg, loadMoreMessages, markMessagesAsRead, refetchConversations } = useMessages(
     isCommunity ? undefined : id,
     isCommunity ? id : undefined
   );
@@ -46,6 +46,20 @@ export default function ChatRoom() {
 
     fetchChatInfo();
   }, [id, isCommunity]);
+
+  // Mark messages as read when entering the chat
+  useEffect(() => {
+    if (user && id && markMessagesAsRead) {
+      const markAsRead = async () => {
+        await markMessagesAsRead();
+        // Refresh conversations to update unread count
+        if (refetchConversations) {
+          refetchConversations();
+        }
+      };
+      markAsRead();
+    }
+  }, [id, user, markMessagesAsRead, refetchConversations]);
 
   useEffect(() => {
     // Only auto-scroll on new messages, not on initial load

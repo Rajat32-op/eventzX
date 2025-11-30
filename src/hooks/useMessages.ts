@@ -111,7 +111,7 @@ export function useMessages(receiverId?: string, communityId?: string) {
     await fetchMessages(nextPage, true);
   }, [page, hasMore, loading, fetchMessages]);
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -164,17 +164,28 @@ export function useMessages(receiverId?: string, communityId?: string) {
         if (!otherUser || msg.community_id) return;
 
         const convId = otherUser.id;
-        if (!conversationMap[convId] || new Date(msg.created_at) > new Date(conversationMap[convId].last_message_time)) {
+        
+        // Initialize conversation if it doesn't exist
+        if (!conversationMap[convId]) {
           conversationMap[convId] = {
             id: convId,
             name: otherUser.name,
             avatar_url: otherUser.avatar_url,
             last_message: msg.content,
             last_message_time: msg.created_at,
-            unread_count: msg.receiver_id === user.id && !msg.read_at ? 1 : 0,
+            unread_count: 0,
             is_community: false,
           };
-        } else if (msg.receiver_id === user.id && !msg.read_at) {
+        }
+        
+        // Update to latest message if this one is newer
+        if (new Date(msg.created_at) > new Date(conversationMap[convId].last_message_time)) {
+          conversationMap[convId].last_message = msg.content;
+          conversationMap[convId].last_message_time = msg.created_at;
+        }
+        
+        // Count unread messages
+        if (msg.receiver_id === user.id && !msg.read_at) {
           conversationMap[convId].unread_count++;
         }
       });
@@ -205,10 +216,41 @@ export function useMessages(receiverId?: string, communityId?: string) {
     } finally {
       setLoading(false);
     }
+  }, [user]);
+
+  const markMessagesAsRead = async () => {
+    if (!user || (!receiverId && !communityId)) return;
+
+    try {
+      let query = supabase
+        .from("messages")
+        .update({ read_at: new Date().toISOString() })
+        .is("read_at", null)
+        .eq("receiver_id", user.id);
+
+      if (receiverId) {
+        query = query.eq("sender_id", receiverId);
+      } else if (communityId) {
+        query = query.eq("community_id", communityId);
+      }
+
+      const { error } = await query;
+
+      if (error) {
+        console.error("Error in markMessagesAsRead:", error);
+        throw error;
+      }
+      
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
   };
 
   const sendMessage = async (content: string) => {
-    if (!user || (!receiverId && !communityId)) return false;
+    if (!user || (!receiverId && !communityId)) {
+      console.log('sendMessage: Missing user or conversation ID', { user, receiverId, communityId });
+      return false;
+    }
 
     // Don't send to dummy users (IDs starting with demo-, profile-, conv-, comm-)
     if (receiverId?.startsWith('demo-') || receiverId?.startsWith('profile-') || 
@@ -232,21 +274,32 @@ export function useMessages(receiverId?: string, communityId?: string) {
       return true;
     }
 
+    console.log('sendMessage: Attempting to send real message', { 
+      sender_id: user.id, 
+      receiver_id: receiverId, 
+      community_id: communityId,
+      content 
+    });
+
     try {
-      const { error } = await supabase.from("messages").insert({
+      const { data, error } = await supabase.from("messages").insert({
         sender_id: user.id,
         receiver_id: receiverId || null,
         community_id: communityId || null,
         content,
-      });
+      }).select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('sendMessage: Database error', error);
+        throw error;
+      }
+      
       return true;
     } catch (error) {
       console.error("Error sending message:", error);
       toast({
         title: "Failed to send message",
-        description: "Please try again.",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
       return false;
@@ -257,6 +310,8 @@ export function useMessages(receiverId?: string, communityId?: string) {
   useEffect(() => {
     if (!user || (!receiverId && !communityId)) return;
 
+    console.log('Setting up realtime subscription for:', { receiverId, communityId, userId: user.id });
+
     const channel = supabase
       .channel(`messages-${receiverId || communityId}`)
       .on(
@@ -265,15 +320,21 @@ export function useMessages(receiverId?: string, communityId?: string) {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: receiverId 
-            ? `sender_id=eq.${receiverId},receiver_id=eq.${user.id}` 
-            : `community_id=eq.${communityId}`,
         },
         async (payload) => {
+          console.log('Realtime message received:', payload);
           const newMessage = payload.new as any;
           
-          // Don't add if it's our own message (already added optimistically)
-          if (newMessage.sender_id === user.id) return;
+          // Check if this message belongs to current conversation
+          const isRelevant = receiverId 
+            ? (newMessage.sender_id === user.id && newMessage.receiver_id === receiverId) ||
+              (newMessage.sender_id === receiverId && newMessage.receiver_id === user.id)
+            : newMessage.community_id === communityId;
+
+          if (!isRelevant) {
+            console.log('Message not relevant to current conversation');
+            return;
+          }
           
           // Fetch sender info
           const { data: sender } = await supabase
@@ -284,30 +345,23 @@ export function useMessages(receiverId?: string, communityId?: string) {
 
           const messageWithSender = { ...newMessage, sender };
 
-          // Check if this message belongs to current conversation
-          if (receiverId) {
-            if (
-              (newMessage.sender_id === user.id && newMessage.receiver_id === receiverId) ||
-              (newMessage.sender_id === receiverId && newMessage.receiver_id === user.id)
-            ) {
-              setMessages((prev) => {
-                // Avoid duplicates
-                if (prev.some(m => m.id === messageWithSender.id)) return prev;
-                return [...prev, messageWithSender];
-              });
+          setMessages((prev) => {
+            // Avoid duplicates
+            if (prev.some(m => m.id === messageWithSender.id)) {
+              console.log('Message already exists, skipping');
+              return prev;
             }
-          } else if (communityId && newMessage.community_id === communityId) {
-            setMessages((prev) => {
-              // Avoid duplicates
-              if (prev.some(m => m.id === messageWithSender.id)) return prev;
-              return [...prev, messageWithSender];
-            });
-          }
+            console.log('Adding new message to state');
+            return [...prev, messageWithSender];
+          });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
   }, [user, receiverId, communityId]);
@@ -320,7 +374,7 @@ export function useMessages(receiverId?: string, communityId?: string) {
     } else {
       fetchConversations();
     }
-  }, [user, receiverId, communityId]);
+  }, [user, receiverId, communityId, fetchConversations, fetchMessages]);
 
   return {
     messages,
@@ -329,6 +383,7 @@ export function useMessages(receiverId?: string, communityId?: string) {
     hasMore,
     sendMessage,
     loadMoreMessages,
+    markMessagesAsRead,
     refetchMessages: () => fetchMessages(0, false),
     refetchConversations: fetchConversations,
   };
