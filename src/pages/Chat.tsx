@@ -8,13 +8,17 @@ import { Search, MessageCircle, Users } from "lucide-react";
 import { useMessages } from "@/hooks/useMessages";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
+import { dummyConversations } from "@/data/dummyData";
 
 export default function Chat() {
   const [searchQuery, setSearchQuery] = useState("");
   const { conversations, loading } = useMessages();
   const navigate = useNavigate();
 
-  const filteredConversations = conversations.filter((conv) =>
+  // Use dummy data if no real conversations exist
+  const displayConversations = conversations.length > 0 ? conversations : dummyConversations;
+
+  const filteredConversations = displayConversations.filter((conv) =>
     conv.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

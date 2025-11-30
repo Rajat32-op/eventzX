@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useCommunities } from "@/hooks/useCommunities";
 import { useNavigate } from "react-router-dom";
+import { dummyCommunities } from "@/data/dummyData";
 
 export default function Communities() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,10 +48,13 @@ export default function Communities() {
   const { communities, loading, joinCommunity, createCommunity } = useCommunities();
   const navigate = useNavigate();
 
-  const campusCommunities = communities.filter(
+  // Use dummy data if no real communities exist
+  const displayCommunities = communities.length > 0 ? communities : dummyCommunities;
+
+  const campusCommunities = displayCommunities.filter(
     (c) => c.type === "Campus" || c.type === "Interest"
   );
-  const cityCommunities = communities.filter((c) => c.type === "City");
+  const cityCommunities = displayCommunities.filter((c) => c.type === "City");
 
   const filterCommunities = (communityList: typeof communities) =>
     communityList.filter(

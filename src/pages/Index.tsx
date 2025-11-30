@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useMeetups } from "@/hooks/useMeetups";
 import { format } from "date-fns";
+import { dummyMeetups, dummyCityMeetups } from "@/data/dummyData";
 
 const categories = [
   { id: "all", name: "All" },
@@ -30,7 +31,22 @@ export default function Index() {
   const navigate = useNavigate();
   const { meetups, loading, joinMeetup } = useMeetups();
 
-  const filteredMeetups = meetups.filter((meetup) => {
+  // Use dummy data if no real meetups exist
+  const displayMeetups = meetups.length > 0 ? meetups : dummyMeetups;
+  const displayCityMeetups = meetups.length > 0 ? meetups : dummyCityMeetups;
+
+  const filteredMeetups = displayMeetups.filter((meetup) => {
+    const matchesCategory =
+      activeCategory === "all" ||
+      meetup.category.toLowerCase().includes(activeCategory);
+    const matchesSearch =
+      searchQuery === "" ||
+      meetup.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      meetup.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const filteredCityMeetups = displayCityMeetups.filter((meetup) => {
     const matchesCategory =
       activeCategory === "all" ||
       meetup.category.toLowerCase().includes(activeCategory);
@@ -150,7 +166,7 @@ export default function Index() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredMeetups.slice(0, 5).map((meetup, index) => (
+                {filteredCityMeetups.map((meetup, index) => (
                   <div key={meetup.id} className="animate-fade-up" style={{ animationDelay: `${index * 0.1}s` }}>
                     <MeetupCard
                       title={meetup.title}
@@ -158,11 +174,11 @@ export default function Index() {
                       time={formatMeetupTime(meetup.date, meetup.time)}
                       location={meetup.location}
                       category={meetup.category}
-                      host={{ name: meetup.creator?.name || "Unknown", avatar: meetup.creator?.avatar_url || undefined, college: `${profile?.city || "City"} Circle` }}
+                      host={{ name: meetup.creator?.name || "Unknown", avatar: meetup.creator?.avatar_url || undefined, college: meetup.creator?.college || `${profile?.city || "Hyderabad"} Circle` }}
                       attendees={meetup.attendee_count}
                       maxAttendees={meetup.max_attendees || undefined}
                       isJoined={meetup.is_joined}
-                      onJoin={() => joinMeetup(meetup.id)}
+                      onJoin={() => !meetup.id.startsWith("city-") && joinMeetup(meetup.id)}
                     />
                   </div>
                 ))}
