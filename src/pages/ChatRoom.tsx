@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Send, Users } from "lucide-react";
+import { ArrowLeft, Send, Users, Loader2 } from "lucide-react";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,10 +15,12 @@ export default function ChatRoom() {
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState("");
   const [chatInfo, setChatInfo] = useState<{ name: string; avatar_url: string | null } | null>(null);
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const isCommunity = type === "community";
-  const { messages, loading, sendMessage } = useMessages(
+  const { messages, loading, hasMore, sendMessage: sendMsg, loadMoreMessages } = useMessages(
     isCommunity ? undefined : id,
     isCommunity ? id : undefined
   );
@@ -46,16 +48,36 @@ export default function ChatRoom() {
   }, [id, isCommunity]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    // Only auto-scroll on new messages, not on initial load
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages.length]);
 
   const handleSend = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || isSending) return;
 
-    const success = await sendMessage(newMessage.trim());
+    setIsSending(true);
+    const success = await sendMsg(newMessage.trim());
     if (success) {
       setNewMessage("");
     }
+    setIsSending(false);
+  };
+
+  const handleLoadMore = async () => {
+    const container = messagesContainerRef.current;
+    const scrollHeightBefore = container?.scrollHeight || 0;
+    
+    await loadMoreMessages();
+    
+    // Maintain scroll position after loading more messages
+    setTimeout(() => {
+      if (container) {
+        const scrollHeightAfter = container.scrollHeight;
+        container.scrollTop = scrollHeightAfter - scrollHeightBefore;
+      }
+    }, 100);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -105,10 +127,24 @@ export default function ChatRoom() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {loading ? (
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Load More Button */}
+        {hasMore && !loading && messages.length > 0 && (
+          <div className="flex justify-center pb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLoadMore}
+            >
+              Load older messages
+            </Button>
+          </div>
+        )}
+        
+        {loading && messages.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading messages...</p>
+            <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+            <p className="text-muted-foreground mt-2">Loading messages...</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-8">
@@ -173,9 +209,17 @@ export default function ChatRoom() {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyPress}
             className="flex-1"
+            disabled={isSending}
           />
-          <Button onClick={handleSend} disabled={!newMessage.trim()}>
-            <Send className="w-4 h-4" />
+          <Button 
+            onClick={handleSend} 
+            disabled={!newMessage.trim() || isSending}
+          >
+            {isSending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </div>

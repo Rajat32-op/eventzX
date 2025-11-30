@@ -15,6 +15,7 @@ import Communities from "./pages/Communities";
 import UserProfile from "./pages/UserProfile";
 import Chat from "./pages/Chat";
 import ChatRoom from "./pages/ChatRoom";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,11 @@ const App = () => (
             <Route path="/chat/:type/:id" element={
               <ProtectedRoute>
                 <ChatRoom />
+              </ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <Notifications />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

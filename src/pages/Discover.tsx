@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, UserPlus, Check, GraduationCap, MapPin, Sparkles, Loader2, UserCheck, Clock } from "lucide-react";
+import { Search, UserPlus, Check, GraduationCap, MapPin, Sparkles, Loader2, UserCheck, Clock, UserMinus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFriendRequests } from "@/hooks/useFriendRequests";
 import { dummyProfiles } from "@/data/dummyData";
@@ -22,6 +22,7 @@ export default function Discover() {
     sendRequest,
     acceptRequest,
     rejectRequest,
+    disconnectFriend,
   } = useFriendRequests();
 
   // Always show dummy data alongside real profiles
@@ -221,14 +222,16 @@ export default function Discover() {
                           e.stopPropagation();
                           if (status === "none") {
                             sendRequest(profile.id);
+                          } else if (status === "connected") {
+                            disconnectFriend(profile.id);
                           }
                         }}
-                        disabled={status !== "none"}
+                        disabled={status === "pending"}
                       >
                         {status === "connected" ? (
                           <>
-                            <UserCheck className="w-4 h-4 mr-1" />
-                            Connected
+                            <UserMinus className="w-4 h-4 mr-1" />
+                            Disconnect
                           </>
                         ) : status === "pending" ? (
                           <>

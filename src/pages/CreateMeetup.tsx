@@ -51,31 +51,36 @@ export default function CreateMeetup() {
 
     setIsLoading(true);
     
-    const { error } = await supabase.from("meetups").insert({
-      creator_id: user.id,
-      title,
-      description,
-      category,
-      location,
-      date,
-      time,
-      max_attendees: maxAttendees ? parseInt(maxAttendees) : null,
-    });
+    try {
+      const { data, error } = await supabase.from("meetups").insert({
+        creator_id: user.id,
+        title,
+        description,
+        category,
+        location,
+        date,
+        time,
+        max_attendees: maxAttendees ? parseInt(maxAttendees) : null,
+      }).select();
 
-    setIsLoading(false);
+      if (error) throw error;
 
-    if (error) {
-      toast({
-        title: "Error creating meetup",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
       toast({
         title: "Meetup Created! 🎉",
         description: "Your spiritual meetup is now live. Others can join!",
       });
+      
+      // Navigate back to home
       navigate("/");
+    } catch (error: any) {
+      console.error("Error creating meetup:", error);
+      toast({
+        title: "Error creating meetup",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 

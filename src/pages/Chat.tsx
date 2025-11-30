@@ -15,7 +15,7 @@ export default function Chat() {
   const { conversations, loading } = useMessages();
   const navigate = useNavigate();
 
-  // Always show dummy data alongside real conversations
+  // Append dummy data at the end (for demo purposes)
   const displayConversations = [...conversations, ...dummyConversations];
 
   const filteredConversations = displayConversations.filter((conv) =>

@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { dummyMessages } from "@/data/dummyData";
 
 interface Message {
   id: string;
@@ -27,23 +29,48 @@ interface Conversation {
   is_community: boolean;
 }
 
+const MESSAGES_PER_PAGE = 15;
+
 export function useMessages(receiverId?: string, communityId?: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
   const { user } = useAuth();
+  const { toast } = useToast();
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async (pageNum: number = 0, append: boolean = false) => {
     if (!user) return;
 
+    const conversationId = receiverId || communityId;
+    
+    // Check if this is a dummy conversation
+    const isDummyConversation = conversationId?.startsWith('conv-') || 
+                                 conversationId?.startsWith('comm-') ||
+                                 conversationId?.startsWith('profile-') ||
+                                 conversationId?.startsWith('demo-');
+
+    if (isDummyConversation && conversationId && dummyMessages[conversationId]) {
+      // Return dummy messages for demo conversations
+      setMessages(dummyMessages[conversationId] || []);
+      setHasMore(false);
+      setLoading(false);
+      return;
+    }
+
     try {
+      const from = pageNum * MESSAGES_PER_PAGE;
+      const to = from + MESSAGES_PER_PAGE - 1;
+
       let query = supabase
         .from("messages")
         .select(`
           *,
           sender:profiles!messages_sender_id_fkey(id, name, avatar_url)
         `)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
       if (receiverId) {
         query = query.or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`);
@@ -54,13 +81,35 @@ export function useMessages(receiverId?: string, communityId?: string) {
       const { data, error } = await query;
 
       if (error) throw error;
-      setMessages(data || []);
+
+      const newMessages = (data || []).reverse(); // Reverse to get oldest first
+      
+      if (append) {
+        setMessages(prev => [...newMessages, ...prev]);
+      } else {
+        setMessages(newMessages);
+      }
+
+      setHasMore((data || []).length === MESSAGES_PER_PAGE);
     } catch (error) {
       console.error("Error fetching messages:", error);
+      toast({
+        title: "Error loading messages",
+        description: "Could not load messages. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, receiverId, communityId, toast]);
+
+  const loadMoreMessages = useCallback(async () => {
+    if (!hasMore || loading) return;
+    
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await fetchMessages(nextPage, true);
+  }, [page, hasMore, loading, fetchMessages]);
 
   const fetchConversations = async () => {
     if (!user) return;
@@ -159,38 +208,72 @@ export function useMessages(receiverId?: string, communityId?: string) {
   };
 
   const sendMessage = async (content: string) => {
-    if (!user || (!receiverId && !communityId)) return;
+    if (!user || (!receiverId && !communityId)) return false;
 
-    const { error } = await supabase.from("messages").insert({
-      sender_id: user.id,
-      receiver_id: receiverId || null,
-      community_id: communityId || null,
-      content,
-    });
-
-    if (error) {
-      console.error("Error sending message:", error);
-      return false;
+    // Don't send to dummy users (IDs starting with demo-, profile-, conv-, comm-)
+    if (receiverId?.startsWith('demo-') || receiverId?.startsWith('profile-') || 
+        receiverId?.startsWith('conv-') || communityId?.startsWith('comm-')) {
+      // Just add optimistically to local state for dummy conversations
+      const dummyMessage: Message = {
+        id: `temp-${Date.now()}`,
+        sender_id: user.id,
+        receiver_id: receiverId || null,
+        community_id: communityId || null,
+        content,
+        created_at: new Date().toISOString(),
+        read_at: null,
+        sender: {
+          id: user.id,
+          name: 'You',
+          avatar_url: null,
+        },
+      };
+      setMessages(prev => [...prev, dummyMessage]);
+      return true;
     }
 
-    return true;
+    try {
+      const { error } = await supabase.from("messages").insert({
+        sender_id: user.id,
+        receiver_id: receiverId || null,
+        community_id: communityId || null,
+        content,
+      });
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Failed to send message",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
   };
 
   // Subscribe to realtime updates
   useEffect(() => {
-    if (!user) return;
+    if (!user || (!receiverId && !communityId)) return;
 
     const channel = supabase
-      .channel("messages-realtime")
+      .channel(`messages-${receiverId || communityId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "messages",
+          filter: receiverId 
+            ? `sender_id=eq.${receiverId},receiver_id=eq.${user.id}` 
+            : `community_id=eq.${communityId}`,
         },
         async (payload) => {
           const newMessage = payload.new as any;
+          
+          // Don't add if it's our own message (already added optimistically)
+          if (newMessage.sender_id === user.id) return;
           
           // Fetch sender info
           const { data: sender } = await supabase
@@ -207,10 +290,18 @@ export function useMessages(receiverId?: string, communityId?: string) {
               (newMessage.sender_id === user.id && newMessage.receiver_id === receiverId) ||
               (newMessage.sender_id === receiverId && newMessage.receiver_id === user.id)
             ) {
-              setMessages((prev) => [...prev, messageWithSender]);
+              setMessages((prev) => {
+                // Avoid duplicates
+                if (prev.some(m => m.id === messageWithSender.id)) return prev;
+                return [...prev, messageWithSender];
+              });
             }
           } else if (communityId && newMessage.community_id === communityId) {
-            setMessages((prev) => [...prev, messageWithSender]);
+            setMessages((prev) => {
+              // Avoid duplicates
+              if (prev.some(m => m.id === messageWithSender.id)) return prev;
+              return [...prev, messageWithSender];
+            });
           }
         }
       )
@@ -223,7 +314,9 @@ export function useMessages(receiverId?: string, communityId?: string) {
 
   useEffect(() => {
     if (receiverId || communityId) {
-      fetchMessages();
+      setPage(0);
+      setMessages([]);
+      fetchMessages(0, false);
     } else {
       fetchConversations();
     }
@@ -233,8 +326,10 @@ export function useMessages(receiverId?: string, communityId?: string) {
     messages,
     conversations,
     loading,
+    hasMore,
     sendMessage,
-    refetchMessages: fetchMessages,
+    loadMoreMessages,
+    refetchMessages: () => fetchMessages(0, false),
     refetchConversations: fetchConversations,
   };
 }

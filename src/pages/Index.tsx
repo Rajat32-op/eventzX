@@ -10,8 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useMeetups } from "@/hooks/useMeetups";
+import { useNotifications } from "@/hooks/useNotifications";
 import { format } from "date-fns";
-import { dummyMeetups, dummyCityMeetups } from "@/data/dummyData";
 
 const categories = [
   { id: "all", name: "All" },
@@ -30,10 +30,11 @@ export default function Index() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { meetups, loading, joinMeetup } = useMeetups();
+  const { unreadCount } = useNotifications();
 
-  // Use dummy data if no real meetups exist
-  const displayMeetups = meetups.length > 0 ? meetups : dummyMeetups;
-  const displayCityMeetups = meetups.length > 0 ? meetups : dummyCityMeetups;
+  // Meetups now come from useMeetups hook (includes DB + dummy data)
+  const displayMeetups = meetups;
+  const displayCityMeetups = meetups;
 
   const filteredMeetups = displayMeetups.filter((meetup) => {
     const matchesCategory =
@@ -84,9 +85,18 @@ export default function Index() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="relative">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative"
+                onClick={() => navigate("/notifications")}
+              >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-secondary rounded-full flex items-center justify-center text-[10px] font-bold text-foreground px-1">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Button>
               <Avatar className="w-9 h-9 border-2 border-primary/30 cursor-pointer" onClick={() => navigate("/profile")}>
                 <AvatarImage src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.name}`} />
