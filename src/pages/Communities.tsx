@@ -48,8 +48,8 @@ export default function Communities() {
   const { communities, loading, joinCommunity, createCommunity } = useCommunities();
   const navigate = useNavigate();
 
-  // Use dummy data if no real communities exist
-  const displayCommunities = communities.length > 0 ? communities : dummyCommunities;
+  // Always show dummy data alongside real communities
+  const displayCommunities = [...communities, ...dummyCommunities];
 
   const campusCommunities = displayCommunities.filter(
     (c) => c.type === "Campus" || c.type === "Interest"
