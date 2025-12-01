@@ -1,8 +1,10 @@
-import { MapPin, Clock, Users, ChevronRight } from "lucide-react";
+import { MapPin, Clock, Users, ChevronRight, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useState } from "react";
 
 interface MeetupCardPropsIndividual {
   title: string;
@@ -18,7 +20,9 @@ interface MeetupCardPropsIndividual {
   attendees: number;
   maxAttendees?: number;
   onJoin?: () => void;
+  onDelete?: () => void;
   isJoined?: boolean;
+  isOwner?: boolean;
 }
 
 interface MeetupCardPropsObject {
@@ -38,8 +42,10 @@ function formatMeetupTime(date: string, time: string) {
 }
 
 export function MeetupCard(props: MeetupCardProps) {
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
+  
   // Check if we received a meetup object or individual props
-  let title, description, time, location, category, host, attendees, maxAttendees, onJoin, isJoined;
+  let title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined, isOwner;
   
   if ('meetup' in props) {
     const { meetup } = props;
@@ -56,9 +62,11 @@ export function MeetupCard(props: MeetupCardProps) {
     attendees = meetup.meetup_attendees?.[0]?.count || 0;
     maxAttendees = meetup.max_attendees;
     onJoin = undefined;
+    onDelete = undefined;
     isJoined = false;
+    isOwner = false;
   } else {
-    ({ title, description, time, location, category, host, attendees, maxAttendees, onJoin, isJoined = false } = props);
+    ({ title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined = false, isOwner = false } = props);
   }
   return (
     <Card className="hover:border-primary/50 transition-all duration-300 hover:glow-primary overflow-hidden group">
@@ -86,10 +94,20 @@ export function MeetupCard(props: MeetupCardProps) {
                 <Clock className="w-4 h-4 text-primary" />
                 <span>{time}</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-accent" />
-                <span className="truncate max-w-[150px]">{location}</span>
-              </div>
+              <Popover open={isLocationOpen} onOpenChange={setIsLocationOpen}>
+                <PopoverTrigger asChild>
+                  <div className="flex items-center gap-1.5 cursor-pointer hover:text-accent transition-colors">
+                    <MapPin className="w-4 h-4 text-accent" />
+                    <span className="truncate max-w-[150px]">{location}</span>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto max-w-[300px] p-3" align="start">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                    <p className="text-sm break-words">{location}</p>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <div className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-secondary" />
                 <span>
@@ -118,17 +136,29 @@ export function MeetupCard(props: MeetupCardProps) {
             </div>
           </div>
 
-          {/* Join button */}
+          {/* Action buttons */}
           <div className="flex flex-col items-end gap-2">
-            <Button
-              variant={isJoined ? "outline" : "default"}
-              size="sm"
-              onClick={onJoin}
-              className="min-w-[80px]"
-            >
-              {isJoined ? "Joined" : "Join"}
-              {!isJoined && <ChevronRight className="w-4 h-4" />}
-            </Button>
+            {isOwner ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={onDelete}
+                className="min-w-[80px]"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Delete
+              </Button>
+            ) : (
+              <Button
+                variant={isJoined ? "outline" : "default"}
+                size="sm"
+                onClick={onJoin}
+                className="min-w-[80px]"
+              >
+                {isJoined ? "Joined" : "Join"}
+                {!isJoined && <ChevronRight className="w-4 h-4" />}
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

@@ -65,6 +65,14 @@ export default function CreateMeetup() {
 
       if (error) throw error;
 
+      // Auto-join creator to the meetup
+      if (data && data[0]) {
+        await supabase.from("meetup_attendees").insert({
+          meetup_id: data[0].id,
+          user_id: user.id,
+        });
+      }
+
       toast({
         title: "Meetup Created! 🎉",
         description: "Your spiritual meetup is now live. Others can join!",

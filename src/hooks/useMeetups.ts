@@ -165,9 +165,38 @@ export function useMeetups() {
     }
   };
 
+  const deleteMeetup = async (meetupId: string) => {
+    if (!user) return;
+
+    const meetup = meetups.find((m) => m.id === meetupId);
+    if (!meetup) return;
+
+    // Check if user is the creator
+    if (meetup.creator_id !== user.id) {
+      toast({ title: "Error", description: "You can only delete your own meetups", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("meetups")
+        .delete()
+        .eq("id", meetupId)
+        .eq("creator_id", user.id);
+
+      if (error) throw error;
+
+      setMeetups((prev) => prev.filter((m) => m.id !== meetupId));
+      toast({ title: "Deleted", description: "Meetup has been deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting meetup:", error);
+      toast({ title: "Error", description: "Failed to delete meetup", variant: "destructive" });
+    }
+  };
+
   useEffect(() => {
     fetchMeetups();
   }, [user]);
 
-  return { meetups, loading, joinMeetup, refetch: fetchMeetups };
+  return { meetups, loading, joinMeetup, deleteMeetup, refetch: fetchMeetups };
 }

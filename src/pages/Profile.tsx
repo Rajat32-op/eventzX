@@ -17,7 +17,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Settings,
   Edit,
   Calendar,
   Users,
@@ -25,6 +24,7 @@ import {
   GraduationCap,
   LogOut,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -170,15 +170,13 @@ export default function Profile() {
       {/* Header */}
       <header className="sticky top-0 z-40 glass border-b border-border">
         <div className="container px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <h1 className="font-display font-bold text-lg text-foreground">
               Profile
             </h1>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon">
-                <Settings className="w-5 h-5" />
-              </Button>
-            </div>
           </div>
         </div>
       </header>
