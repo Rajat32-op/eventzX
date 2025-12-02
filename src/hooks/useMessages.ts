@@ -37,6 +37,7 @@ export function useMessages(receiverId?: string, communityId?: string) {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -115,6 +116,14 @@ export function useMessages(receiverId?: string, communityId?: string) {
     if (!user) return;
 
     try {
+      // PHASE 3: Fetch unread counts from user_chat_metadata
+      const { data: metadataData, error: metadataError } = await (supabase as any)
+        .from("user_chat_metadata")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (metadataError) throw metadataError;
+
       // Fetch all messages involving the user
       const { data: messagesData, error: messagesError } = await supabase
         .from("messages")
@@ -167,13 +176,18 @@ export function useMessages(receiverId?: string, communityId?: string) {
         
         // Initialize conversation if it doesn't exist
         if (!conversationMap[convId]) {
+          // Get unread count from metadata
+          const metadata = metadataData?.find(m => 
+            m.chat_id === convId && m.chat_type === 'private'
+          );
+          
           conversationMap[convId] = {
             id: convId,
             name: otherUser.name,
             avatar_url: otherUser.avatar_url,
             last_message: msg.content,
             last_message_time: msg.created_at,
-            unread_count: 0,
+            unread_count: metadata?.unread_count || 0,
             is_community: false,
           };
         }
@@ -183,11 +197,6 @@ export function useMessages(receiverId?: string, communityId?: string) {
           conversationMap[convId].last_message = msg.content;
           conversationMap[convId].last_message_time = msg.created_at;
         }
-        
-        // Count unread messages
-        if (msg.receiver_id === user.id && !msg.read_at) {
-          conversationMap[convId].unread_count++;
-        }
       });
 
       // Process community messages
@@ -195,13 +204,18 @@ export function useMessages(receiverId?: string, communityId?: string) {
         const communityMsgs = communityMessages.filter(m => m.community_id === community.id);
         const lastMsg = communityMsgs[0];
         
+        // Get unread count from metadata
+        const metadata = metadataData?.find(m => 
+          m.chat_id === community.id && m.chat_type === 'group'
+        );
+        
         conversationMap[`community_${community.id}`] = {
           id: community.id,
           name: community.name,
           avatar_url: community.image_url,
           last_message: lastMsg?.content || "No messages yet",
           last_message_time: lastMsg?.created_at || community.created_at,
-          unread_count: 0,
+          unread_count: metadata?.unread_count || 0,
           is_community: true,
         };
       });
@@ -222,24 +236,22 @@ export function useMessages(receiverId?: string, communityId?: string) {
     if (!user || (!receiverId && !communityId)) return;
 
     try {
-      let query = supabase
-        .from("messages")
-        .update({ read_at: new Date().toISOString() })
-        .is("read_at", null)
-        .eq("receiver_id", user.id);
-
-      if (receiverId) {
-        query = query.eq("sender_id", receiverId);
-      } else if (communityId) {
-        query = query.eq("community_id", communityId);
-      }
-
-      const { error } = await query;
+      // PHASE 4: Use new mark_messages_as_read function
+      const chatId = receiverId || communityId;
+      const chatType = receiverId ? 'private' : 'group';
+      
+      const { data, error } = await (supabase as any).rpc('mark_messages_as_read', {
+        p_user_id: user.id,
+        p_chat_id: chatId,
+        p_chat_type: chatType
+      });
 
       if (error) {
         console.error("Error in markMessagesAsRead:", error);
         throw error;
       }
+      
+      console.log(`Marked ${data} messages as read`);
       
     } catch (error) {
       console.error("Error marking messages as read:", error);
@@ -306,65 +318,142 @@ export function useMessages(receiverId?: string, communityId?: string) {
     }
   };
 
-  // Subscribe to realtime updates
+  // PHASE 5: Subscribe to realtime updates with new tables
   useEffect(() => {
-    if (!user || (!receiverId && !communityId)) return;
+    if (!user) return;
 
-    console.log('Setting up realtime subscription for:', { receiverId, communityId, userId: user.id });
+    console.log('Setting up realtime subscriptions for user:', user.id);
 
-    const channel = supabase
-      .channel(`messages-${receiverId || communityId}`)
+    // Subscribe to chat metadata updates (for unread counts)
+    const metadataChannel = supabase
+      .channel(`metadata-${user.id}`)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
-          table: "messages",
+          table: "user_chat_metadata",
+          filter: `user_id=eq.${user.id}`,
         },
-        async (payload) => {
-          console.log('Realtime message received:', payload);
-          const newMessage = payload.new as any;
+        (payload) => {
+          console.log('Metadata update received:', payload);
           
-          // Check if this message belongs to current conversation
-          const isRelevant = receiverId 
-            ? (newMessage.sender_id === user.id && newMessage.receiver_id === receiverId) ||
-              (newMessage.sender_id === receiverId && newMessage.receiver_id === user.id)
-            : newMessage.community_id === communityId;
-
-          if (!isRelevant) {
-            console.log('Message not relevant to current conversation');
-            return;
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            const updatedMetadata = payload.new as any;
+            
+            // Update conversation unread count
+            setConversations(prev => prev.map(conv => {
+              const matchesChat = updatedMetadata.chat_type === 'private'
+                ? conv.id === updatedMetadata.chat_id
+                : conv.id === updatedMetadata.chat_id && conv.is_community;
+              
+              if (matchesChat) {
+                return { ...conv, unread_count: updatedMetadata.unread_count };
+              }
+              return conv;
+            }));
+            
+            // Recalculate total unread count
+            fetchTotalUnreadCount();
           }
-          
-          // Fetch sender info
-          const { data: sender } = await supabase
-            .from("profiles")
-            .select("id, name, avatar_url")
-            .eq("id", newMessage.sender_id)
-            .single();
-
-          const messageWithSender = { ...newMessage, sender };
-
-          setMessages((prev) => {
-            // Avoid duplicates
-            if (prev.some(m => m.id === messageWithSender.id)) {
-              console.log('Message already exists, skipping');
-              return prev;
-            }
-            console.log('Adding new message to state');
-            return [...prev, messageWithSender];
-          });
         }
       )
       .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
+        console.log('Metadata subscription status:', status);
       });
 
+    // Subscribe to messages in current conversation
+    let messagesChannel: any = null;
+    if (receiverId || communityId) {
+      messagesChannel = supabase
+        .channel(`messages-${receiverId || communityId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+          },
+          async (payload) => {
+            console.log('Realtime message received:', payload);
+            const newMessage = payload.new as any;
+            
+            // Check if this message belongs to current conversation
+            const isRelevant = receiverId 
+              ? (newMessage.sender_id === user.id && newMessage.receiver_id === receiverId) ||
+                (newMessage.sender_id === receiverId && newMessage.receiver_id === user.id)
+              : newMessage.community_id === communityId;
+
+            if (!isRelevant) {
+              console.log('Message not relevant to current conversation');
+              return;
+            }
+            
+            // Fetch sender info
+            const { data: sender } = await supabase
+              .from("profiles")
+              .select("id, name, avatar_url")
+              .eq("id", newMessage.sender_id)
+              .single();
+
+            const messageWithSender = { ...newMessage, sender };
+
+            setMessages((prev) => {
+              // Avoid duplicates
+              if (prev.some(m => m.id === messageWithSender.id)) {
+                console.log('Message already exists, skipping');
+                return prev;
+              }
+              console.log('Adding new message to state');
+              return [...prev, messageWithSender];
+            });
+          }
+        )
+        .subscribe((status) => {
+          console.log('Messages subscription status:', status);
+        });
+    }
+
     return () => {
-      console.log('Cleaning up realtime subscription');
-      supabase.removeChannel(channel);
+      console.log('Cleaning up realtime subscriptions');
+      supabase.removeChannel(metadataChannel);
+      if (messagesChannel) {
+        supabase.removeChannel(messagesChannel);
+      }
     };
   }, [user, receiverId, communityId]);
+
+  // Fetch total unread count
+  const fetchTotalUnreadCount = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await (supabase as any).rpc('get_total_unread_count', {
+        p_user_id: user.id
+      });
+
+      if (error) throw error;
+      
+      const count = data || 0;
+      setTotalUnreadCount(count);
+      
+      // Update document title with unread count
+      if (count > 0) {
+        document.title = `(${count}) InnerCircle`;
+      } else {
+        document.title = 'InnerCircle';
+      }
+    } catch (error) {
+      console.error("Error fetching total unread count:", error);
+    }
+  }, [user]);
+
+  // Load total unread count on mount
+  useEffect(() => {
+    if (user) {
+      fetchTotalUnreadCount();
+    }
+  }, [user, fetchTotalUnreadCount]);
 
   useEffect(() => {
     if (receiverId || communityId) {
@@ -381,10 +470,12 @@ export function useMessages(receiverId?: string, communityId?: string) {
     conversations,
     loading,
     hasMore,
+    totalUnreadCount,
     sendMessage,
     loadMoreMessages,
     markMessagesAsRead,
     refetchMessages: () => fetchMessages(0, false),
     refetchConversations: fetchConversations,
+    fetchTotalUnreadCount,
   };
 }

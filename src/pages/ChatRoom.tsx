@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Send, Users, Loader2 } from "lucide-react";
 import { useMessages } from "@/hooks/useMessages";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
@@ -13,6 +14,7 @@ export default function ChatRoom() {
   const { type, id } = useParams<{ type: string; id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { refreshUnreadCount } = useUnreadCount();
   const [newMessage, setNewMessage] = useState("");
   const [chatInfo, setChatInfo] = useState<{ name: string; avatar_url: string | null } | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -56,10 +58,12 @@ export default function ChatRoom() {
         if (refetchConversations) {
           refetchConversations();
         }
+        // Refresh global unread count
+        refreshUnreadCount();
       };
       markAsRead();
     }
-  }, [id, user, markMessagesAsRead, refetchConversations]);
+  }, [id, user, markMessagesAsRead, refetchConversations, refreshUnreadCount]);
 
   useEffect(() => {
     // Only auto-scroll on new messages, not on initial load

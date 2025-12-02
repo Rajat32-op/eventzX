@@ -1,6 +1,8 @@
 import { Home, Plus, Users, Search, MessageCircle } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { Badge } from "@/components/ui/badge";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/" },
@@ -12,6 +14,7 @@ const navItems = [
 
 export function BottomNav() {
   const location = useLocation();
+  const { totalUnreadCount } = useUnreadCount();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border">
@@ -39,12 +42,22 @@ export function BottomNav() {
                 </div>
               ) : (
                 <>
-                  <item.icon
-                    className={cn(
-                      "w-6 h-6 transition-all duration-200",
-                      isActive && "scale-110"
+                  <div className="relative">
+                    <item.icon
+                      className={cn(
+                        "w-6 h-6 transition-all duration-200",
+                        isActive && "scale-110"
+                      )}
+                    />
+                    {item.label === "Chat" && totalUnreadCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-4 min-w-[16px] flex items-center justify-center text-[10px] px-1 py-0"
+                      >
+                        {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+                      </Badge>
                     )}
-                  />
+                  </div>
                   <span className="text-xs font-medium">{item.label}</span>
                 </>
               )}

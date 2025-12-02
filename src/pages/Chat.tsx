@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, MessageCircle, Users } from "lucide-react";
 import { useMessages } from "@/hooks/useMessages";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { dummyConversations } from "@/data/dummyData";
@@ -13,6 +14,7 @@ import { dummyConversations } from "@/data/dummyData";
 export default function Chat() {
   const [searchQuery, setSearchQuery] = useState("");
   const { conversations, loading, refetchConversations } = useMessages();
+  const { totalUnreadCount } = useUnreadCount();
   const navigate = useNavigate();
 
   // Refetch conversations when component mounts to get latest unread counts
@@ -35,11 +37,26 @@ export default function Chat() {
       <header className="sticky top-0 z-40 glass border-b border-border">
         <div className="container px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center relative">
               <MessageCircle className="w-5 h-5 text-secondary" />
+              {totalUnreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 min-w-[20px] flex items-center justify-center text-xs px-1"
+                >
+                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                </Badge>
+              )}
             </div>
-            <div>
-              <h1 className="font-display font-bold text-lg text-foreground">Messages</h1>
+            <div className="flex-1">
+              <h1 className="font-display font-bold text-lg text-foreground">
+                Messages
+                {totalUnreadCount > 0 && (
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    ({totalUnreadCount} unread)
+                  </span>
+                )}
+              </h1>
               <p className="text-xs text-muted-foreground">Your conversations</p>
             </div>
           </div>
