@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface Profile {
   id: string;
@@ -32,6 +33,7 @@ export function useFriendRequests() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { createNotification } = useNotifications();
 
   const fetchData = async () => {
     if (!user) return;
@@ -96,6 +98,22 @@ export function useFriendRequests() {
       return;
     }
 
+    // Get sender profile info for notification
+    const { data: senderProfile } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", user.id)
+      .single();
+
+    // Create notification for receiver
+    await createNotification(
+      receiverId,
+      'friend_request',
+      'New Connection Request',
+      `${senderProfile?.name || 'Someone'} wants to connect with you`,
+      '/discover'
+    );
+
     setSentRequests((prev) => [...prev, receiverId]);
     toast({ title: "Request Sent! 🙏", description: "They'll be notified about your connection request." });
   };
@@ -131,6 +149,25 @@ export function useFriendRequests() {
     toast({ title: "Request Declined", description: "The request has been declined." });
   };
 
+  const disconnectFriend = async (friendId: string) => {
+    if (!user) return;
+
+    // Find the friend request (could be sent or received)
+    const { error } = await supabase
+      .from("friend_requests")
+      .delete()
+      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${user.id})`)
+      .eq("status", "accepted");
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to disconnect", variant: "destructive" });
+      return;
+    }
+
+    setFriends((prev) => prev.filter((id) => id !== friendId));
+    toast({ title: "Disconnected", description: "You are no longer connected." });
+  };
+
   useEffect(() => {
     fetchData();
   }, [user]);
@@ -144,6 +181,7 @@ export function useFriendRequests() {
     sendRequest,
     acceptRequest,
     rejectRequest,
+    disconnectFriend,
     refetch: fetchData,
   };
 }

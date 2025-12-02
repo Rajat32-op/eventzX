@@ -15,6 +15,7 @@ import {
   Clock,
   Loader2,
   Heart,
+  UserMinus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFriendRequests } from "@/hooks/useFriendRequests";
@@ -38,7 +39,7 @@ export default function UserProfile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { sentRequests, friends, sendRequest } = useFriendRequests();
+  const { sentRequests, friends, sendRequest, disconnectFriend } = useFriendRequests();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -136,14 +137,16 @@ export default function UserProfile() {
                   onClick={() => {
                     if (connectionStatus === "none") {
                       sendRequest(profile.id);
+                    } else if (connectionStatus === "connected") {
+                      disconnectFriend(profile.id);
                     }
                   }}
-                  disabled={connectionStatus !== "none"}
+                  disabled={connectionStatus === "pending"}
                 >
                   {connectionStatus === "connected" ? (
                     <>
-                      <UserCheck className="w-4 h-4 mr-2" />
-                      Connected
+                      <UserMinus className="w-4 h-4 mr-2" />
+                      Disconnect
                     </>
                   ) : connectionStatus === "pending" ? (
                     <>

@@ -5,14 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, UserPlus, Check, GraduationCap, MapPin, Sparkles, Loader2, UserCheck, Clock } from "lucide-react";
+import { Search, UserPlus, Check, GraduationCap, MapPin, Sparkles, Loader2, UserCheck, Clock, UserMinus, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFriendRequests } from "@/hooks/useFriendRequests";
 import { dummyProfiles } from "@/data/dummyData";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Discover() {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     profiles,
     sentRequests,
@@ -22,7 +24,24 @@ export default function Discover() {
     sendRequest,
     acceptRequest,
     rejectRequest,
+    disconnectFriend,
   } = useFriendRequests();
+
+  const handleShareInnerCircle = () => {
+    const url = window.location.origin;
+    navigator.clipboard.writeText(url).then(() => {
+      toast({
+        title: "Link copied!",
+        description: "Share InnerCircle with your friends",
+      });
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive",
+      });
+    });
+  };
 
   // Always show dummy data alongside real profiles
   const displayProfiles = [...profiles, ...dummyProfiles];
@@ -221,14 +240,16 @@ export default function Discover() {
                           e.stopPropagation();
                           if (status === "none") {
                             sendRequest(profile.id);
+                          } else if (status === "connected") {
+                            disconnectFriend(profile.id);
                           }
                         }}
-                        disabled={status !== "none"}
+                        disabled={status === "pending"}
                       >
                         {status === "connected" ? (
                           <>
-                            <UserCheck className="w-4 h-4 mr-1" />
-                            Connected
+                            <UserMinus className="w-4 h-4 mr-1" />
+                            Disconnect
                           </>
                         ) : status === "pending" ? (
                           <>
@@ -268,7 +289,10 @@ export default function Discover() {
               Know someone who'd love InnerCircle? Share the app and grow your
               spiritual network.
             </p>
-            <Button variant="glass">Share InnerCircle</Button>
+            <Button variant="glass" onClick={handleShareInnerCircle}>
+              <Share2 className="w-4 h-4 mr-2" />
+              Share InnerCircle
+            </Button>
             <div className="absolute top-0 right-0 w-24 h-24 bg-accent/20 rounded-full blur-2xl" />
           </CardContent>
         </Card>

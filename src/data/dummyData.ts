@@ -350,3 +350,171 @@ export const dummyConversations = [
     is_community: false
   }
 ];
+
+// Dummy messages for demo conversations
+export const dummyMessages: Record<string, any[]> = {
+  "conv-1": [ // Priya Sharma
+    {
+      id: "msg-1-1",
+      sender_id: "profile-1",
+      receiver_id: "current-user",
+      community_id: null,
+      content: "Hey! Are you coming to the meditation session tomorrow?",
+      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      read_at: new Date().toISOString(),
+      sender: {
+        id: "profile-1",
+        name: "Priya Sharma",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya"
+      }
+    },
+    {
+      id: "msg-1-2",
+      sender_id: "profile-1",
+      receiver_id: "current-user",
+      community_id: null,
+      content: "It's at 6 AM at the campus garden 🧘‍♀️",
+      created_at: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+      read_at: new Date().toISOString(),
+      sender: {
+        id: "profile-1",
+        name: "Priya Sharma",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya"
+      }
+    },
+    {
+      id: "msg-1-3",
+      sender_id: "profile-1",
+      receiver_id: "current-user",
+      community_id: null,
+      content: "See you at the meditation session tomorrow! 🧘‍♀️",
+      created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+      read_at: null,
+      sender: {
+        id: "profile-1",
+        name: "Priya Sharma",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya"
+      }
+    }
+  ],
+  "comm-1": [ // IIT Hyderabad Meditation Club
+    {
+      id: "msg-comm-1-1",
+      sender_id: "profile-2",
+      receiver_id: null,
+      community_id: "comm-1",
+      content: "Good morning everyone! Ready for today's session? 🌅",
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+      read_at: null,
+      sender: {
+        id: "profile-2",
+        name: "Rahul Menon",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul"
+      }
+    },
+    {
+      id: "msg-comm-1-2",
+      sender_id: "profile-3",
+      receiver_id: null,
+      community_id: "comm-1",
+      content: "Yes! Looking forward to it. What's the focus today?",
+      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      read_at: null,
+      sender: {
+        id: "profile-3",
+        name: "Sneha Reddy",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha"
+      }
+    },
+    {
+      id: "msg-comm-1-3",
+      sender_id: "profile-2",
+      receiver_id: null,
+      community_id: "comm-1",
+      content: "We'll do breathwork and mindfulness. Don't forget the session is at 6 AM!",
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      read_at: null,
+      sender: {
+        id: "profile-2",
+        name: "Rahul Menon",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul"
+      }
+    }
+  ],
+  "conv-2": [ // Rahul Menon
+    {
+      id: "msg-2-1",
+      sender_id: "profile-2",
+      receiver_id: "current-user",
+      community_id: null,
+      content: "That was an amazing discussion on Chapter 3! 📖",
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+      read_at: new Date().toISOString(),
+      sender: {
+        id: "profile-2",
+        name: "Rahul Menon",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul"
+      }
+    },
+    {
+      id: "msg-2-2",
+      sender_id: "profile-2",
+      receiver_id: "current-user",
+      community_id: null,
+      content: "Chapter 3 discussion was amazing! Let's continue next week.",
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+      read_at: new Date().toISOString(),
+      sender: {
+        id: "profile-2",
+        name: "Rahul Menon",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul"
+      }
+    }
+  ],
+  "comm-3": [ // Bhagavad Gita Study Group
+    {
+      id: "msg-comm-3-1",
+      sender_id: "profile-4",
+      receiver_id: null,
+      community_id: "comm-3",
+      content: "Who's coming for tomorrow's session on Chapter 4?",
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+      read_at: null,
+      sender: {
+        id: "profile-4",
+        name: "Arjun Singh",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=ArjunS"
+      }
+    },
+    {
+      id: "msg-comm-3-2",
+      sender_id: "profile-3",
+      receiver_id: null,
+      community_id: "comm-3",
+      content: "I'll be there! Who's bringing the notes tomorrow?",
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+      read_at: null,
+      sender: {
+        id: "profile-3",
+        name: "Sneha Reddy",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha"
+      }
+    }
+  ],
+  "conv-3": [ // Sneha Reddy
+    {
+      id: "msg-3-1",
+      sender_id: "profile-3",
+      receiver_id: "current-user",
+      community_id: null,
+      content: "Thanks for joining the yoga class! You did great 💪",
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      read_at: new Date().toISOString(),
+      sender: {
+        id: "profile-3",
+        name: "Sneha Reddy",
+        avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha"
+      }
+    }
+  ]
+};

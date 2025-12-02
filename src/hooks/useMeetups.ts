@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
+import { dummyMeetups, dummyCityMeetups } from "@/data/dummyData";
 
 interface Meetup {
   id: string;
@@ -29,17 +31,18 @@ export function useMeetups() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { createNotification } = useNotifications();
 
   const fetchMeetups = async () => {
     try {
-      // Fetch meetups with creator info
+      // Fetch meetups with creator info, ordered by most recent first
       const { data: meetupsData, error: meetupsError } = await supabase
         .from("meetups")
         .select(`
           *,
           creator:profiles!meetups_creator_id_fkey(id, name, avatar_url, college)
         `)
-        .order("date", { ascending: true });
+        .order("created_at", { ascending: false });
 
       if (meetupsError) throw meetupsError;
 
@@ -73,7 +76,10 @@ export function useMeetups() {
         is_joined: userJoinedMeetups.includes(meetup.id),
       })) || [];
 
-      setMeetups(formattedMeetups);
+      // Append dummy data at the end (for demo purposes - will be removed later)
+      const allMeetups = [...formattedMeetups, ...dummyMeetups, ...dummyCityMeetups];
+      
+      setMeetups(allMeetups);
     } catch (error) {
       console.error("Error fetching meetups:", error);
     } finally {
@@ -125,6 +131,29 @@ export function useMeetups() {
         return;
       }
 
+      // Get joiner profile info for notification
+      const { data: joinerProfile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      // Create notification for meetup creator (if it's not the same user)
+      if (meetup.creator_id !== user.id) {
+        const truncatedTitle = meetup.title.length > 30 
+          ? `${meetup.title.substring(0, 30)}...` 
+          : meetup.title;
+        
+        await createNotification(
+          meetup.creator_id,
+          'meetup_join',
+          'Someone joined your meetup!',
+          `${joinerProfile?.name || 'Someone'} joined "${truncatedTitle}"`,
+          '/',
+          { meetup_id: meetupId, meetup_title: meetup.title }
+        );
+      }
+
       setMeetups((prev) =>
         prev.map((m) =>
           m.id === meetupId
@@ -136,9 +165,38 @@ export function useMeetups() {
     }
   };
 
+  const deleteMeetup = async (meetupId: string) => {
+    if (!user) return;
+
+    const meetup = meetups.find((m) => m.id === meetupId);
+    if (!meetup) return;
+
+    // Check if user is the creator
+    if (meetup.creator_id !== user.id) {
+      toast({ title: "Error", description: "You can only delete your own meetups", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("meetups")
+        .delete()
+        .eq("id", meetupId)
+        .eq("creator_id", user.id);
+
+      if (error) throw error;
+
+      setMeetups((prev) => prev.filter((m) => m.id !== meetupId));
+      toast({ title: "Deleted", description: "Meetup has been deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting meetup:", error);
+      toast({ title: "Error", description: "Failed to delete meetup", variant: "destructive" });
+    }
+  };
+
   useEffect(() => {
     fetchMeetups();
   }, [user]);
 
-  return { meetups, loading, joinMeetup, refetch: fetchMeetups };
+  return { meetups, loading, joinMeetup, deleteMeetup, refetch: fetchMeetups };
 }
