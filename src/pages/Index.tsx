@@ -84,35 +84,39 @@ export default function Index() {
   const displayMeetups = meetups;
   const displayCityMeetups = meetups;
 
-  const applyFilters = (meetup: any) => {
-    // Category filter
+  const applyFilters = (meetup: any, feedType: 'campus' | 'city') => {
+    // 1. City/Campus location filter (mandatory)
+    let matchesUserLocation = false;
+    if (feedType === 'campus') {
+      // Campus feed: only for students, show campus-only meetups from their college
+      if (profile?.college) {
+        matchesUserLocation = 
+          meetup.college?.toLowerCase() === profile.college.toLowerCase() &&
+          meetup.is_campus_only === true;
+      }
+    } else {
+      // City feed: show meetups from user's city that are NOT campus-only
+      if (profile?.city) {
+        matchesUserLocation = 
+          meetup.city?.toLowerCase() === profile.city.toLowerCase() &&
+          meetup.is_campus_only !== true;
+      }
+    }
+    
+    if (!matchesUserLocation) return false;
+    
+    // 2. Category filter
     const matchesCategory =
       activeCategory === "all" ||
       meetup.category.toLowerCase().includes(activeCategory);
     
-    // Search filter
+    // 3. Search filter
     const matchesSearch =
       searchQuery === "" ||
       meetup.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       meetup.description.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Campus filter
-    let matchesCampus = true;
-    if (filters.selectedCampuses.length > 0) {
-      matchesCampus = filters.selectedCampuses.some(campus => 
-        meetup.location?.toLowerCase().includes(campus.toLowerCase())
-      );
-    }
-    
-    // City filter
-    let matchesCity = true;
-    if (filters.selectedCities.length > 0) {
-      matchesCity = filters.selectedCities.some(city => 
-        meetup.location?.toLowerCase().includes(city.toLowerCase())
-      );
-    }
-    
-    // Date filter
+    // 4. Date filter
     let matchesDate = true;
     if (filters.dateFilterType !== 'all' && meetup.date) {
       const meetupDate = new Date(meetup.date);
@@ -137,7 +141,7 @@ export default function Index() {
       }
     }
     
-    // Time filter
+    // 5. Time filter
     let matchesTime = true;
     if (filters.timeFilterType !== 'all' && meetup.time) {
       const meetupTime = meetup.time.slice(0, 5); // Get HH:MM
@@ -151,11 +155,12 @@ export default function Index() {
       }
     }
     
-    return matchesCategory && matchesSearch && matchesCampus && matchesCity && matchesDate && matchesTime;
+    return matchesCategory && matchesSearch && matchesDate && matchesTime;
   };
 
-  const filteredMeetups = displayMeetups.filter(applyFilters);
-  const filteredCityMeetups = displayCityMeetups.filter(applyFilters);
+  // Separate filtering for campus and city feeds
+  const filteredMeetups = displayMeetups.filter(meetup => applyFilters(meetup, 'campus'));
+  const filteredCityMeetups = displayCityMeetups.filter(meetup => applyFilters(meetup, 'city'));
 
   const formatMeetupTime = (date: string, time: string) => {
     try {
@@ -220,7 +225,10 @@ export default function Index() {
                 <h1 className="font-display font-bold text-lg text-foreground">InnerCircle</h1>
                 <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
                   <MapPin className="w-3 h-3" />
-                  {profile?.college || "Select Campus"}
+                  {(profile as any)?.is_student !== false 
+                    ? (profile?.college || "Select Campus")
+                    : (profile?.city || "Select City")
+                  }
                 </button>
               </div>
             </div>
@@ -429,22 +437,36 @@ export default function Index() {
       </header>
 
       <div className="container px-4 py-6">
-        <Tabs defaultValue="campus" className="mb-6">
-          <TabsList className="w-full grid grid-cols-2 mb-4">
-            <TabsTrigger value="campus" className="font-display">Campus Feed</TabsTrigger>
-            <TabsTrigger value="city" className="font-display">{profile?.city || "City"} Circle</TabsTrigger>
-          </TabsList>
+        {/* For students: show both Campus Feed and City Circle */}
+        {/* For non-students: show only City Circle */}
+        <Tabs 
+          key={(profile as any)?.is_student}
+          defaultValue={(profile as any)?.is_student === false ? "city" : "campus"} 
+          className="mb-6"
+        >
+          {(profile as any)?.is_student !== false && (
+            <TabsList className="w-full grid grid-cols-2 mb-4">
+              <TabsTrigger value="campus" className="font-display">Campus Feed</TabsTrigger>
+              <TabsTrigger value="city" className="font-display">{profile?.city || "City"} Circle</TabsTrigger>
+            </TabsList>
+          )}
+          {(profile as any)?.is_student === false && (
+            <TabsList className="w-full mb-4">
+              <TabsTrigger value="city" className="font-display w-full">{profile?.city || "City"} Circle</TabsTrigger>
+            </TabsList>
+          )}
 
-          <TabsContent value="campus" className="mt-0">
-            <div className="flex gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-              {categories.map((category) => (
-                <Badge key={category.id} variant={activeCategory === category.id ? "default" : "interest"} className="cursor-pointer whitespace-nowrap shrink-0" onClick={() => setActiveCategory(category.id)}>
-                  {category.name}
-                </Badge>
-              ))}
-            </div>
+          {(profile as any)?.is_student !== false && (
+            <TabsContent value="campus" className="mt-0">
+              <div className="flex gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                {categories.map((category) => (
+                  <Badge key={category.id} variant={activeCategory === category.id ? "default" : "interest"} className="cursor-pointer whitespace-nowrap shrink-0" onClick={() => setActiveCategory(category.id)}>
+                    {category.name}
+                  </Badge>
+                ))}
+              </div>
 
-            {loading ? (
+              {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
@@ -475,7 +497,8 @@ export default function Index() {
                 ))}
               </div>
             )}
-          </TabsContent>
+            </TabsContent>
+          )}
 
           <TabsContent value="city" className="mt-0">
             <div className="flex gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
@@ -489,6 +512,11 @@ export default function Index() {
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : filteredCityMeetups.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No meetups found</p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate("/create")}>Create the first one!</Button>
               </div>
             ) : (
               <div className="space-y-4">

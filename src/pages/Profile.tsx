@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -25,6 +32,7 @@ import {
   LogOut,
   Loader2,
   ArrowLeft,
+  Camera,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +40,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { MeetupCard } from "@/components/MeetupCard";
+import { colleges, cities } from "@/data/colleges";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -43,6 +52,9 @@ export default function Profile() {
   const [joinedMeetups, setJoinedMeetups] = useState<any[]>([]);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useState<HTMLInputElement | null>(null)[1];
   const [editForm, setEditForm] = useState({
     name: '',
     bio: '',
@@ -68,6 +80,47 @@ export default function Profile() {
       fetchProfileData();
     }
   }, [user]);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const deleteMeetup = async (meetupId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('meetups')
+        .delete()
+        .eq('id', meetupId)
+        .eq('creator_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Meetup deleted',
+        description: 'Your meetup has been deleted successfully.',
+      });
+
+      // Refresh the meetups list
+      fetchProfileData();
+    } catch (error) {
+      console.error('Error deleting meetup:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete meetup. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const fetchProfileData = async () => {
     if (!user) return;
@@ -117,6 +170,28 @@ export default function Profile() {
 
     try {
       setIsSaving(true);
+
+      let avatarUrl = profile?.avatar_url;
+
+      // Upload avatar if a new file was selected
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, avatarFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        avatarUrl = publicUrl;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -125,6 +200,7 @@ export default function Profile() {
           college: editForm.college,
           city: editForm.city,
           journey: editForm.journey,
+          avatar_url: avatarUrl,
         })
         .eq('id', user.id);
 
@@ -136,6 +212,8 @@ export default function Profile() {
       });
 
       setIsEditOpen(false);
+      setAvatarFile(null);
+      setAvatarPreview(null);
       // Refresh profile data
       window.location.reload();
     } catch (error) {
@@ -206,7 +284,7 @@ export default function Profile() {
                     Edit Profile
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Edit Profile</DialogTitle>
                     <DialogDescription>
@@ -214,6 +292,33 @@ export default function Profile() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Profile Picture</Label>
+                      <div className="flex items-center gap-4">
+                        <Avatar className="w-20 h-20 border-2 border-primary/30">
+                          <AvatarImage src={avatarPreview || profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.name}`} />
+                          <AvatarFallback>{profile?.name?.charAt(0) || "U"}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                            id="avatar-upload"
+                          />
+                          <label htmlFor="avatar-upload">
+                            <Button type="button" variant="outline" size="sm" asChild>
+                              <span className="cursor-pointer">
+                                <Camera className="w-4 h-4 mr-2" />
+                                Choose Photo
+                              </span>
+                            </Button>
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-2">JPG, PNG or GIF (max 5MB)</p>
+                        </div>
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="name">Name</Label>
                       <Input
@@ -225,21 +330,44 @@ export default function Profile() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="college">College</Label>
-                      <Input
-                        id="college"
+                      <Select
                         value={editForm.college}
-                        onChange={(e) => setEditForm({ ...editForm, college: e.target.value })}
-                        placeholder="Your college"
-                      />
+                        onValueChange={(value) => setEditForm({ ...editForm, college: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your college" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {colleges.map((c) => (
+                            <SelectItem key={c.id} value={c.name}>
+                              <span className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {c.type}
+                                </Badge>
+                                {c.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="city">City</Label>
-                      <Input
-                        id="city"
+                      <Select
                         value={editForm.city}
-                        onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                        placeholder="Your city"
-                      />
+                        onValueChange={(value) => setEditForm({ ...editForm, city: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your city" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {cities.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="bio">Bio</Label>
@@ -372,7 +500,14 @@ export default function Profile() {
               </div>
             ) : (
               createdMeetups.map((meetup) => (
-                <MeetupCard key={meetup.id} meetup={meetup} />
+                <MeetupCard 
+                  key={meetup.id} 
+                  meetup={{
+                    ...meetup,
+                    isOwner: true,
+                    onDelete: () => deleteMeetup(meetup.id)
+                  }} 
+                />
               ))
             )}
           </TabsContent>

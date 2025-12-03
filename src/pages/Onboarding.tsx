@@ -18,6 +18,7 @@ import { colleges, interests as interestsData, cities } from "@/data/colleges";
 
 export default function Onboarding() {
   const [step, setStep] = useState(1);
+  const [isStudent, setIsStudent] = useState<boolean | null>(null);
   const [college, setCollege] = useState("");
   const [city, setCity] = useState("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -36,11 +37,23 @@ export default function Onboarding() {
   };
 
   const handleNext = () => {
-    if (step === 1 && !college) {
-      toast({
-        title: "Please select your college",
-        variant: "destructive",
-      });
+    if (step === 1) {
+      if (isStudent && !college) {
+        toast({
+          title: "Please select your college",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!isStudent && !city) {
+        toast({
+          title: "Please select your city",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Both students and non-students go to interests (step 3)
+      setStep(3);
       return;
     }
     setStep(step + 1);
@@ -56,19 +69,33 @@ export default function Onboarding() {
       return;
     }
 
-    // Get the selected college name from the colleges array
+    // Get the selected college name and city from the colleges array
     const selectedCollege = colleges.find(c => c.id === college);
     const selectedInterestNames = selectedInterests.map(id => {
       const interest = interestsData.find(i => i.id === id);
       return interest?.name || id;
     });
 
+    // For students, ALWAYS auto-populate city from college data
+    // For non-students, use their manually entered city
+    const finalCity = isStudent && selectedCollege ? selectedCollege.city : city;
+
+    if (!finalCity) {
+      toast({
+        title: "City is required",
+        description: "Please ensure a city is selected.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     const { error } = await updateProfile({
-      college: selectedCollege?.name || college,
-      city: city || null,
+      college: isStudent ? (selectedCollege?.name || college) : null,
+      city: finalCity,
       interests: selectedInterestNames,
-    });
+      is_student: isStudent,
+    } as any);
     setIsLoading(false);
 
     if (error) {
@@ -101,11 +128,11 @@ export default function Onboarding() {
           </div>
           <CardTitle className="font-display text-2xl">Complete Your Profile</CardTitle>
           <p className="text-muted-foreground text-sm">
-            Step {step} of 3
+            Step {step === 3 ? 2 : step} of 2
           </p>
           {/* Progress dots */}
           <div className="flex justify-center gap-2 pt-2">
-            {[1, 2, 3].map((s) => (
+            {[1, 3].map((s) => (
               <div
                 key={s}
                 className={`w-2 h-2 rounded-full transition-all ${
@@ -120,8 +147,39 @@ export default function Onboarding() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Step 1: College */}
-          {step === 1 && (
+          {/* Step 1: Student or Non-Student */}
+          {step === 1 && isStudent === null && (
+            <div className="space-y-4 animate-fade-up">
+              <div className="flex items-center gap-2 text-foreground">
+                <GraduationCap className="w-5 h-5 text-primary" />
+                <h3 className="font-display font-semibold">Are you a student?</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This helps us show you the most relevant spiritual communities.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex-col gap-2"
+                  onClick={() => setIsStudent(true)}
+                >
+                  <GraduationCap className="w-8 h-8 text-primary" />
+                  <span className="font-semibold">Yes, I'm a Student</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex-col gap-2"
+                  onClick={() => setIsStudent(false)}
+                >
+                  <MapPin className="w-8 h-8 text-accent" />
+                  <span className="font-semibold">Not a Student</span>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 1: College (for students) */}
+          {step === 1 && isStudent === true && (
             <div className="space-y-4 animate-fade-up">
               <div className="flex items-center gap-2 text-foreground">
                 <GraduationCap className="w-5 h-5 text-primary" />
@@ -147,24 +205,29 @@ export default function Onboarding() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button 
-                variant="glow" 
-                className="w-full" 
-                onClick={handleNext}
-                disabled={!college}
-              >
-                Continue
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsStudent(null)} className="flex-1">
+                  Back
+                </Button>
+                <Button 
+                  variant="glow" 
+                  className="flex-1" 
+                  onClick={handleNext}
+                  disabled={!college}
+                >
+                  Continue
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
             </div>
           )}
 
-          {/* Step 2: City */}
-          {step === 2 && (
+          {/* Step 1: City (for non-students) */}
+          {step === 1 && isStudent === false && (
             <div className="space-y-4 animate-fade-up">
               <div className="flex items-center gap-2 text-foreground">
                 <MapPin className="w-5 h-5 text-accent" />
-                <h3 className="font-display font-semibold">Your City (Optional)</h3>
+                <h3 className="font-display font-semibold">Select Your City</h3>
               </div>
               <p className="text-sm text-muted-foreground">
                 Connect with spiritual communities in your city.
@@ -173,7 +236,7 @@ export default function Onboarding() {
                 <SelectTrigger>
                   <SelectValue placeholder="Choose your city..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60">
                   {cities.map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
@@ -182,16 +245,23 @@ export default function Onboarding() {
                 </SelectContent>
               </Select>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                <Button variant="outline" onClick={() => setIsStudent(null)} className="flex-1">
                   Back
                 </Button>
-                <Button variant="glow" className="flex-1" onClick={handleNext}>
+                <Button 
+                  variant="glow" 
+                  className="flex-1" 
+                  onClick={handleNext}
+                  disabled={!city}
+                >
                   Continue
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             </div>
           )}
+
+
 
           {/* Step 3: Interests */}
           {step === 3 && (
@@ -223,7 +293,7 @@ export default function Onboarding() {
                 {selectedInterests.length} selected
               </p>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
                   Back
                 </Button>
                 <Button 
