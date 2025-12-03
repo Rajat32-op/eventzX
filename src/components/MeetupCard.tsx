@@ -61,10 +61,10 @@ export function MeetupCard(props: MeetupCardProps) {
     };
     attendees = meetup.meetup_attendees?.[0]?.count || 0;
     maxAttendees = meetup.max_attendees;
-    onJoin = undefined;
-    onDelete = undefined;
-    isJoined = false;
-    isOwner = false;
+    onJoin = meetup.onJoin;
+    onDelete = meetup.onDelete;
+    isJoined = meetup.isJoined || false;
+    isOwner = meetup.isOwner || false;
   } else {
     ({ title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined = false, isOwner = false } = props);
   }

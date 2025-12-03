@@ -31,11 +31,12 @@ export default function CreateMeetup() {
   const [date, setDate] = useState("");
   const [category, setCategory] = useState("");
   const [maxAttendees, setMaxAttendees] = useState("");
+  const [isCampusOnly, setIsCampusOnly] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +62,9 @@ export default function CreateMeetup() {
         date,
         time,
         max_attendees: maxAttendees ? parseInt(maxAttendees) : null,
+        is_campus_only: (profile as any)?.is_student !== false ? isCampusOnly : false,
+        city: profile?.city || null,
+        college: profile?.college || null,
       }).select();
 
       if (error) throw error;
@@ -141,6 +145,36 @@ export default function CreateMeetup() {
                   ))}
                 </div>
               </div>
+
+              {/* Campus/City Toggle for Students */}
+              {(profile as any)?.is_student !== false && (
+                <div className="space-y-3">
+                  <Label>Who can join?</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Badge
+                      variant={isCampusOnly ? "default" : "interest"}
+                      className="cursor-pointer text-sm py-3 px-4 justify-center"
+                      onClick={() => setIsCampusOnly(true)}
+                    >
+                      <span className="mr-1.5">🎓</span>
+                      Campus Only
+                    </Badge>
+                    <Badge
+                      variant={!isCampusOnly ? "default" : "interest"}
+                      className="cursor-pointer text-sm py-3 px-4 justify-center"
+                      onClick={() => setIsCampusOnly(false)}
+                    >
+                      <span className="mr-1.5">🌆</span>
+                      City Circle
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {isCampusOnly 
+                      ? "Only students from your campus can see and join"
+                      : "Anyone in your city can see and join (students + non-students)"}
+                  </p>
+                </div>
+              )}
 
               {/* Title */}
               <div className="space-y-2">

@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
-import { dummyMeetups, dummyCityMeetups } from "@/data/dummyData";
 
 interface Meetup {
   id: string;
@@ -15,12 +14,14 @@ interface Meetup {
   category: string;
   creator_id: string;
   max_attendees: number | null;
+  is_campus_only: boolean | null;
   created_at: string;
   creator: {
     id: string;
     name: string;
     avatar_url: string | null;
     college: string | null;
+    city: string | null;
   };
   attendee_count: number;
   is_joined: boolean;
@@ -40,7 +41,7 @@ export function useMeetups() {
         .from("meetups")
         .select(`
           *,
-          creator:profiles!meetups_creator_id_fkey(id, name, avatar_url, college)
+          creator:profiles!meetups_creator_id_fkey(id, name, avatar_url, college, city)
         `)
         .order("created_at", { ascending: false });
 
@@ -69,17 +70,17 @@ export function useMeetups() {
         countMap[a.meetup_id] = (countMap[a.meetup_id] || 0) + 1;
       });
 
-      const formattedMeetups = meetupsData?.map((meetup) => ({
+      const formattedMeetups = meetupsData?.map((meetup: any) => ({
         ...meetup,
         creator: meetup.creator,
         attendee_count: countMap[meetup.id] || 0,
         is_joined: userJoinedMeetups.includes(meetup.id),
+        is_campus_only: meetup.is_campus_only ?? null,
+        city: meetup.city ?? null,
+        college: meetup.college ?? null,
       })) || [];
 
-      // Append dummy data at the end (for demo purposes - will be removed later)
-      const allMeetups = [...formattedMeetups, ...dummyMeetups, ...dummyCityMeetups];
-      
-      setMeetups(allMeetups);
+      setMeetups(formattedMeetups as Meetup[]);
     } catch (error) {
       console.error("Error fetching meetups:", error);
     } finally {
