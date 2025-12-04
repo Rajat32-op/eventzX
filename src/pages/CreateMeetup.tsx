@@ -31,7 +31,8 @@ export default function CreateMeetup() {
   const [date, setDate] = useState("");
   const [category, setCategory] = useState("");
   const [maxAttendees, setMaxAttendees] = useState("");
-  const [isCampusOnly, setIsCampusOnly] = useState(true);
+  const [showInCampus, setShowInCampus] = useState(true);
+  const [showInCity, setShowInCity] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
@@ -50,6 +51,16 @@ export default function CreateMeetup() {
       return;
     }
 
+    // Validate at least one visibility option is selected for students
+    if ((profile as any)?.is_student !== false && !showInCampus && !showInCity) {
+      toast({
+        title: "Select visibility",
+        description: "Please select at least Campus or City Circle.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -62,7 +73,8 @@ export default function CreateMeetup() {
         date,
         time,
         max_attendees: maxAttendees ? parseInt(maxAttendees) : null,
-        is_campus_only: (profile as any)?.is_student !== false ? isCampusOnly : false,
+        show_in_campus: (profile as any)?.is_student !== false ? showInCampus : false,
+        show_in_city: (profile as any)?.is_student !== false ? showInCity : true,
         city: profile?.city || null,
         college: profile?.college || null,
       }).select();
@@ -146,32 +158,36 @@ export default function CreateMeetup() {
                 </div>
               </div>
 
-              {/* Campus/City Toggle for Students */}
+              {/* Campus/City Multi-Select for Students */}
               {(profile as any)?.is_student !== false && (
                 <div className="space-y-3">
-                  <Label>Who can join?</Label>
+                  <Label>Where should this appear? (select at least one)</Label>
                   <div className="grid grid-cols-2 gap-2">
                     <Badge
-                      variant={isCampusOnly ? "default" : "interest"}
+                      variant={showInCampus ? "default" : "interest"}
                       className="cursor-pointer text-sm py-3 px-4 justify-center"
-                      onClick={() => setIsCampusOnly(true)}
+                      onClick={() => setShowInCampus(!showInCampus)}
                     >
                       <span className="mr-1.5">🎓</span>
-                      Campus Only
+                      Campus Feed
                     </Badge>
                     <Badge
-                      variant={!isCampusOnly ? "default" : "interest"}
+                      variant={showInCity ? "default" : "interest"}
                       className="cursor-pointer text-sm py-3 px-4 justify-center"
-                      onClick={() => setIsCampusOnly(false)}
+                      onClick={() => setShowInCity(!showInCity)}
                     >
                       <span className="mr-1.5">🌆</span>
                       City Circle
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {isCampusOnly 
-                      ? "Only students from your campus can see and join"
-                      : "Anyone in your city can see and join (students + non-students)"}
+                    {showInCampus && showInCity 
+                      ? "Visible to both your campus students and city community"
+                      : showInCampus 
+                        ? "Only visible to students from your campus"
+                        : showInCity
+                          ? "Only visible to your city community"
+                          : "Please select at least one option"}
                   </p>
                 </div>
               )}

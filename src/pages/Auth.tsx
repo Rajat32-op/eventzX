@@ -103,7 +103,7 @@ export default function Auth() {
       });
     } else {
       toast({
-        title: "Welcome to InnerCircle! 🎉",
+        title: "Welcome to SpiritualX! 🎉",
         description: "Your account has been created. Let's set up your profile!",
       });
       navigate("/onboarding");
@@ -124,22 +124,22 @@ export default function Auth() {
         <div className="text-center mb-12 animate-fade-in">
           {/* Logo */}
           <div className="inline-flex items-center gap-2 mb-6">
-            <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center glow-primary">
-              <Sparkles className="w-6 h-6 text-foreground" />
+            <div className="w-12 h-12 rounded-xl overflow-hidden glow-primary">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <span className="font-display text-3xl font-bold text-gradient">
-              InnerCircle
+              SpiritualX
             </span>
           </div>
 
           <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4 max-w-lg mx-auto leading-tight">
-            Find Your{" "}
-            <span className="text-gradient">Spiritual Tribe</span>{" "}
-            on Campus
+            Connect With Your Spiritual{" "}
+            <span className="text-gradient">Community</span>{" "}
+             on Your College and City
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Connect with like-minded students. Meditate together. Grow together.
-          </p>
+ Connect with spiritually-minded people.
+ Share events. Join communities. Grow together.           </p>
 
           {/* Feature pills */}
           <div className="flex flex-wrap justify-center gap-3 mt-8">
@@ -153,7 +153,7 @@ export default function Auth() {
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border">
               <Compass className="w-4 h-4 text-accent" />
-              <span className="text-sm text-foreground">Temple Trips</span>
+              <span className="text-sm text-foreground">City Community</span>
             </div>
           </div>
         </div>
@@ -275,7 +275,7 @@ export default function Auth() {
                     className="w-full" 
                     disabled={isLoading}
                   >
-                    {isLoading ? "Creating account..." : "Join InnerCircle"}
+                    {isLoading ? "Creating account..." : "Join SpiritualX"}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </form>

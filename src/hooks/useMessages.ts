@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { dummyMessages } from "@/data/dummyData";
 
 interface Message {
   id: string;
@@ -46,20 +45,6 @@ export function useMessages(receiverId?: string, communityId?: string) {
 
     const conversationId = receiverId || communityId;
     
-    // Check if this is a dummy conversation
-    const isDummyConversation = conversationId?.startsWith('conv-') || 
-                                 conversationId?.startsWith('comm-') ||
-                                 conversationId?.startsWith('profile-') ||
-                                 conversationId?.startsWith('demo-');
-
-    if (isDummyConversation && conversationId && dummyMessages[conversationId]) {
-      // Return dummy messages for demo conversations
-      setMessages(dummyMessages[conversationId] || []);
-      setHasMore(false);
-      setLoading(false);
-      return;
-    }
-
     try {
       const from = pageNum * MESSAGES_PER_PAGE;
       const to = from + MESSAGES_PER_PAGE - 1;
@@ -264,27 +249,6 @@ export function useMessages(receiverId?: string, communityId?: string) {
       return false;
     }
 
-    // Don't send to dummy users (IDs starting with demo-, profile-, conv-, comm-)
-    if (receiverId?.startsWith('demo-') || receiverId?.startsWith('profile-') || 
-        receiverId?.startsWith('conv-') || communityId?.startsWith('comm-')) {
-      // Just add optimistically to local state for dummy conversations
-      const dummyMessage: Message = {
-        id: `temp-${Date.now()}`,
-        sender_id: user.id,
-        receiver_id: receiverId || null,
-        community_id: communityId || null,
-        content,
-        created_at: new Date().toISOString(),
-        read_at: null,
-        sender: {
-          id: user.id,
-          name: 'You',
-          avatar_url: null,
-        },
-      };
-      setMessages(prev => [...prev, dummyMessage]);
-      return true;
-    }
 
     console.log('sendMessage: Attempting to send real message', { 
       sender_id: user.id, 
@@ -439,9 +403,9 @@ export function useMessages(receiverId?: string, communityId?: string) {
       
       // Update document title with unread count
       if (count > 0) {
-        document.title = `(${count}) InnerCircle`;
+        document.title = `(${count}) SpiritualX`;
       } else {
-        document.title = 'InnerCircle';
+        document.title = 'SpiritualX';
       }
     } catch (error) {
       console.error("Error fetching total unread count:", error);

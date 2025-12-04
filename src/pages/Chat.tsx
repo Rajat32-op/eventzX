@@ -9,7 +9,6 @@ import { useMessages } from "@/hooks/useMessages";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { dummyConversations } from "@/data/dummyData";
 
 export default function Chat() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,8 +23,7 @@ export default function Chat() {
     }
   }, [refetchConversations]);
 
-  // Append dummy data at the end (for demo purposes)
-  const displayConversations = [...conversations, ...dummyConversations];
+  const displayConversations =conversations;
 
   const filteredConversations = displayConversations.filter((conv) =>
     conv.name.toLowerCase().includes(searchQuery.toLowerCase())

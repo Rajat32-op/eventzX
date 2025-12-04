@@ -29,7 +29,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Search, MapPin, Sparkles, Bell, Filter, Loader2, CalendarIcon, X } from "lucide-react";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
+
+
+import { Search, MapPin, Sparkles, Bell, Filter, Loader2, CalendarIcon, X ,Share2} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -37,7 +40,6 @@ import { useMeetups } from "@/hooks/useMeetups";
 import { useNotifications } from "@/hooks/useNotifications";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { colleges } from "@/data/colleges";
 
 const categories = [
   { id: "all", name: "All" },
@@ -55,8 +57,6 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
-    selectedCampuses: [] as string[],
-    selectedCities: [] as string[],
     dateFilterType: 'all' as 'all' | 'today' | 'tomorrow' | 'after' | 'on',
     dateValue: undefined as Date | undefined,
     timeFilterType: 'all' as 'all' | 'after' | 'before' | 'range',
@@ -65,22 +65,11 @@ export default function Index() {
     timeRangeStart: '',
     timeRangeEnd: '',
   });
-  const [availableCampuses, setAvailableCampuses] = useState<string[]>([]);
-  const [availableCities, setAvailableCities] = useState<string[]>([]);
   const { profile, user } = useAuth();
   const navigate = useNavigate();
   const { meetups, loading, joinMeetup, deleteMeetup } = useMeetups();
   const { unreadCount } = useNotifications();
 
-  // Extract unique campuses and cities from colleges data
-  useEffect(() => {
-    const campuses = [...new Set(colleges.map(c => c.name))].sort();
-    const cities = [...new Set(colleges.map(c => c.city))].sort();
-    setAvailableCampuses(campuses);
-    setAvailableCities(cities);
-  }, []);
-
-  // Meetups now come from useMeetups hook (includes DB + dummy data)
   const displayMeetups = meetups;
   const displayCityMeetups = meetups;
 
@@ -88,18 +77,18 @@ export default function Index() {
     // 1. City/Campus location filter (mandatory)
     let matchesUserLocation = false;
     if (feedType === 'campus') {
-      // Campus feed: only for students, show campus-only meetups from their college
+      // Campus feed: show meetups from same college that have show_in_campus enabled
       if (profile?.college) {
         matchesUserLocation = 
           meetup.college?.toLowerCase() === profile.college.toLowerCase() &&
-          meetup.is_campus_only === true;
+          meetup.show_in_campus === true;
       }
     } else {
-      // City feed: show meetups from user's city that are NOT campus-only
+      // City feed: show meetups from same city that have show_in_city enabled
       if (profile?.city) {
         matchesUserLocation = 
           meetup.city?.toLowerCase() === profile.city.toLowerCase() &&
-          meetup.is_campus_only !== true;
+          meetup.show_in_city === true;
       }
     }
     
@@ -173,8 +162,6 @@ export default function Index() {
 
   const resetFilters = () => {
     setFilters({
-      selectedCampuses: [],
-      selectedCities: [],
       dateFilterType: 'all',
       dateValue: undefined,
       timeFilterType: 'all',
@@ -187,29 +174,9 @@ export default function Index() {
 
   const activeFilterCount = () => {
     let count = 0;
-    if (filters.selectedCampuses.length > 0) count++;
-    if (filters.selectedCities.length > 0) count++;
     if (filters.dateFilterType !== 'all') count++;
     if (filters.timeFilterType !== 'all') count++;
     return count;
-  };
-
-  const toggleCampus = (campus: string) => {
-    setFilters(prev => ({
-      ...prev,
-      selectedCampuses: prev.selectedCampuses.includes(campus)
-        ? prev.selectedCampuses.filter(c => c !== campus)
-        : [...prev.selectedCampuses, campus]
-    }));
-  };
-
-  const toggleCity = (city: string) => {
-    setFilters(prev => ({
-      ...prev,
-      selectedCities: prev.selectedCities.includes(city)
-        ? prev.selectedCities.filter(c => c !== city)
-        : [...prev.selectedCities, city]
-    }));
   };
 
   return (
@@ -218,11 +185,11 @@ export default function Index() {
         <div className="container px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-foreground" />
+              <div className="w-10 h-10 rounded-xl overflow-hidden">
+                <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div>
-                <h1 className="font-display font-bold text-lg text-foreground">InnerCircle</h1>
+                <h1 className="font-display font-bold text-lg text-foreground">SpiritualX</h1>
                 <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
                   <MapPin className="w-3 h-3" />
                   {(profile as any)?.is_student !== false 
@@ -274,50 +241,6 @@ export default function Index() {
                   </SheetDescription>
                 </SheetHeader>
                 <div className="space-y-6 py-6 max-h-[70vh] overflow-y-auto">
-                  {/* Campus Filter */}
-                  <div className="space-y-2">
-                    <Label>Campuses ({filters.selectedCampuses.length} selected)</Label>
-                    <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-                      {availableCampuses.map((campus) => (
-                        <div key={campus} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`campus-${campus}`}
-                            checked={filters.selectedCampuses.includes(campus)}
-                            onCheckedChange={() => toggleCampus(campus)}
-                          />
-                          <label
-                            htmlFor={`campus-${campus}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {campus}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* City Filter */}
-                  <div className="space-y-2">
-                    <Label>Cities ({filters.selectedCities.length} selected)</Label>
-                    <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-                      {availableCities.map((city) => (
-                        <div key={city} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`city-${city}`}
-                            checked={filters.selectedCities.includes(city)}
-                            onCheckedChange={() => toggleCity(city)}
-                          />
-                          <label
-                            htmlFor={`city-${city}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {city}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Date Filter */}
                   <div className="space-y-2">
                     <Label>Date</Label>
@@ -480,18 +403,13 @@ export default function Index() {
                 {filteredMeetups.map((meetup, index) => (
                   <div key={meetup.id} className="animate-fade-up" style={{ animationDelay: `${index * 0.1}s` }}>
                     <MeetupCard
-                      title={meetup.title}
-                      description={meetup.description}
-                      time={formatMeetupTime(meetup.date, meetup.time)}
-                      location={meetup.location}
-                      category={meetup.category}
-                      host={{ name: meetup.creator?.name || "Unknown", avatar: meetup.creator?.avatar_url || undefined, college: meetup.creator?.college || "Unknown" }}
-                      attendees={meetup.attendee_count}
-                      maxAttendees={meetup.max_attendees || undefined}
-                      isJoined={meetup.is_joined}
-                      isOwner={meetup.creator_id === user?.id}
-                      onJoin={() => joinMeetup(meetup.id)}
-                      onDelete={() => deleteMeetup(meetup.id)}
+                      meetup={{
+                        ...meetup,
+                        isJoined: meetup.is_joined,
+                        isOwner: meetup.creator_id === user?.id,
+                        onJoin: () => joinMeetup(meetup.id),
+                        onDelete: () => deleteMeetup(meetup.id)
+                      }}
                     />
                   </div>
                 ))}
@@ -523,18 +441,13 @@ export default function Index() {
                 {filteredCityMeetups.map((meetup, index) => (
                   <div key={meetup.id} className="animate-fade-up" style={{ animationDelay: `${index * 0.1}s` }}>
                     <MeetupCard
-                      title={meetup.title}
-                      description={meetup.description}
-                      time={formatMeetupTime(meetup.date, meetup.time)}
-                      location={meetup.location}
-                      category={meetup.category}
-                      host={{ name: meetup.creator?.name || "Unknown", avatar: meetup.creator?.avatar_url || undefined, college: meetup.creator?.college || `${profile?.city || "Hyderabad"} Circle` }}
-                      attendees={meetup.attendee_count}
-                      maxAttendees={meetup.max_attendees || undefined}
-                      isJoined={meetup.is_joined}
-                      isOwner={meetup.creator_id === user?.id}
-                      onJoin={() => !meetup.id.startsWith("city-") && joinMeetup(meetup.id)}
-                      onDelete={() => deleteMeetup(meetup.id)}
+                      meetup={{
+                        ...meetup,
+                        isJoined: meetup.is_joined,
+                        isOwner: meetup.creator_id === user?.id,
+                        onJoin: () => !meetup.id.startsWith("city-") && joinMeetup(meetup.id),
+                        onDelete: () => deleteMeetup(meetup.id)
+                      }}
                     />
                   </div>
                 ))}
@@ -542,6 +455,9 @@ export default function Index() {
             )}
           </TabsContent>
         </Tabs>
+        <div className="mb-4">
+                  <FeedbackDialog />
+                </div>
       </div>
     </AppLayout>
   );

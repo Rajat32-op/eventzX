@@ -1,10 +1,12 @@
-import { MapPin, Clock, Users, ChevronRight, Trash2 } from "lucide-react";
+import { MapPin, Clock, Users, ChevronRight, Trash2, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MeetupDetailDialog } from "./MeetupDetailDialog";
 
 interface MeetupCardPropsIndividual {
   title: string;
@@ -43,12 +45,15 @@ function formatMeetupTime(date: string, time: string) {
 
 export function MeetupCard(props: MeetupCardProps) {
   const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Check if we received a meetup object or individual props
-  let title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined, isOwner;
+  let title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined, isOwner, creatorId, fullMeetup;
   
   if ('meetup' in props) {
     const { meetup } = props;
+    fullMeetup = meetup;
     title = meetup.title;
     description = meetup.description;
     time = formatMeetupTime(meetup.date, meetup.time);
@@ -65,14 +70,18 @@ export function MeetupCard(props: MeetupCardProps) {
     onDelete = meetup.onDelete;
     isJoined = meetup.isJoined || false;
     isOwner = meetup.isOwner || false;
+    creatorId = meetup.creator_id;
   } else {
     ({ title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined = false, isOwner = false } = props);
   }
   return (
-    <Card className="hover:border-primary/50 transition-all duration-300 hover:glow-primary overflow-hidden group">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
+    <>
+      <Card 
+        className="hover:border-primary/50 transition-all duration-300 hover:glow-primary overflow-hidden group"
+      >
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
             {/* Category badge */}
             <Badge variant="interest" className="mb-3">
               {category}
@@ -126,7 +135,15 @@ export function MeetupCard(props: MeetupCardProps) {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
+                <p 
+                  className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (creatorId) {
+                      navigate(`/user/${creatorId}`);
+                    }
+                  }}
+                >
                   {host.name}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
@@ -138,11 +155,28 @@ export function MeetupCard(props: MeetupCardProps) {
 
           {/* Action buttons */}
           <div className="flex flex-col items-end gap-2">
+            {fullMeetup && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsDetailOpen(true);
+                }}
+                className="min-w-[80px]"
+              >
+                <MessageCircle className="w-4 h-4 mr-1" />
+                Comments
+              </Button>
+            )}
             {isOwner ? (
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={onDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete?.();
+                }}
                 className="min-w-[80px]"
               >
                 <Trash2 className="w-4 h-4 mr-1" />
@@ -152,7 +186,10 @@ export function MeetupCard(props: MeetupCardProps) {
               <Button
                 variant={isJoined ? "outline" : "default"}
                 size="sm"
-                onClick={onJoin}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onJoin?.();
+                }}
                 className="min-w-[80px]"
               >
                 {isJoined ? "Joined" : "Join"}
@@ -163,5 +200,14 @@ export function MeetupCard(props: MeetupCardProps) {
         </div>
       </CardContent>
     </Card>
+
+    {fullMeetup && (
+      <MeetupDetailDialog
+        meetup={fullMeetup}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+      />
+    )}
+    </>
   );
 }

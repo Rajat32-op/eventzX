@@ -55,6 +55,9 @@ export default function Profile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useState<HTMLInputElement | null>(null)[1];
+  const [isConnectionsDialogOpen, setIsConnectionsDialogOpen] = useState(false);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [loadingConnections, setLoadingConnections] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
     bio: '',
@@ -119,6 +122,32 @@ export default function Profile() {
         description: 'Failed to delete meetup. Please try again.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const fetchConnections = async () => {
+    if (!user) return;
+
+    try {
+      setLoadingConnections(true);
+
+      // Fetch accepted friend requests
+      const { data: friendRequests } = await supabase
+        .from('friend_requests')
+        .select('*, sender:profiles!friend_requests_sender_id_fkey(id, name, avatar_url, college, city), receiver:profiles!friend_requests_receiver_id_fkey(id, name, avatar_url, college, city)')
+        .eq('status', 'accepted')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+      // Extract the other user from each connection
+      const connectionsList = friendRequests?.map((req) => {
+        return req.sender_id === user.id ? req.receiver : req.sender;
+      }) || [];
+
+      setConnections(connectionsList);
+    } catch (error) {
+      console.error('Error fetching connections:', error);
+    } finally {
+      setLoadingConnections(false);
     }
   };
 
@@ -462,7 +491,13 @@ export default function Profile() {
                   </p>
                   <p className="text-xs text-muted-foreground">Joined</p>
                 </div>
-                <div className="text-center">
+                <div 
+                  className="text-center cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => {
+                    setIsConnectionsDialogOpen(true);
+                    fetchConnections();
+                  }}
+                >
                   <p className="font-display text-2xl font-bold text-primary">
                     {loading ? '-' : stats.connections}
                   </p>
@@ -556,6 +591,61 @@ export default function Profile() {
           Sign Out
         </Button>
       </div>
+
+      {/* Connections Dialog */}
+      <Dialog open={isConnectionsDialogOpen} onOpenChange={setIsConnectionsDialogOpen}>
+        <DialogContent className="max-w-md max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Connections</DialogTitle>
+            <DialogDescription>
+              Your {stats.connections} connection{stats.connections !== 1 ? 's' : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            {loadingConnections ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : connections.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No connections yet</p>
+                <Button variant="outline" className="mt-4" onClick={() => {
+                  setIsConnectionsDialogOpen(false);
+                  navigate("/discover");
+                }}>
+                  Discover People
+                </Button>
+              </div>
+            ) : (
+              connections.map((connection) => (
+                <div
+                  key={connection.id}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setIsConnectionsDialogOpen(false);
+                    navigate(`/user/${connection.id}`);
+                  }}
+                >
+                  <Avatar className="w-12 h-12 border-2 border-primary/30">
+                    <AvatarImage src={connection.avatar_url || undefined} alt={connection.name} />
+                    <AvatarFallback className="bg-primary/20 text-primary">
+                      {connection.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">
+                      {connection.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {connection.college || connection.city}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

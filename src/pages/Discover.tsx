@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, UserPlus, Check, GraduationCap, MapPin, Sparkles, Loader2, UserCheck, Clock, UserMinus, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFriendRequests } from "@/hooks/useFriendRequests";
-import { dummyProfiles } from "@/data/dummyData";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Discover() {
@@ -27,12 +26,12 @@ export default function Discover() {
     disconnectFriend,
   } = useFriendRequests();
 
-  const handleShareInnerCircle = () => {
+  const handleShareSpiritualX = () => {
     const url = window.location.origin;
     navigator.clipboard.writeText(url).then(() => {
       toast({
         title: "Link copied!",
-        description: "Share InnerCircle with your friends",
+        description: "Share SpiritualX with your friends",
       });
     }).catch(() => {
       toast({
@@ -43,8 +42,7 @@ export default function Discover() {
     });
   };
 
-  // Always show dummy data alongside real profiles
-  const displayProfiles = [...profiles, ...dummyProfiles];
+  const displayProfiles = profiles;
 
   const filteredProfiles = displayProfiles.filter(
     (profile) =>
@@ -67,8 +65,8 @@ export default function Discover() {
       <header className="sticky top-0 z-40 glass border-b border-border">
         <div className="container px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="font-display font-bold text-lg text-foreground">
@@ -286,12 +284,12 @@ export default function Discover() {
               Invite Friends
             </h3>
             <p className="text-foreground/80 text-sm mb-4">
-              Know someone who'd love InnerCircle? Share the app and grow your
+              Know someone who'd love SpiritualX? Share the app and grow your
               spiritual network.
             </p>
-            <Button variant="glass" onClick={handleShareInnerCircle}>
+            <Button variant="glass" onClick={handleShareSpiritualX}>
               <Share2 className="w-4 h-4 mr-2" />
-              Share InnerCircle
+              Share SpiritualX
             </Button>
             <div className="absolute top-0 right-0 w-24 h-24 bg-accent/20 rounded-full blur-2xl" />
           </CardContent>

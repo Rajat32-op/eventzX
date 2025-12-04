@@ -14,7 +14,10 @@ interface Meetup {
   category: string;
   creator_id: string;
   max_attendees: number | null;
-  is_campus_only: boolean | null;
+  show_in_campus: boolean | null;
+  show_in_city: boolean | null;
+  city: string | null;
+  college: string | null;
   created_at: string;
   creator: {
     id: string;
@@ -75,7 +78,8 @@ export function useMeetups() {
         creator: meetup.creator,
         attendee_count: countMap[meetup.id] || 0,
         is_joined: userJoinedMeetups.includes(meetup.id),
-        is_campus_only: meetup.is_campus_only ?? null,
+        show_in_campus: meetup.show_in_campus ?? null,
+        show_in_city: meetup.show_in_city ?? null,
         city: meetup.city ?? null,
         college: meetup.college ?? null,
       })) || [];
@@ -148,7 +152,7 @@ export function useMeetups() {
         await createNotification(
           meetup.creator_id,
           'meetup_join',
-          'Someone joined your meetup!',
+          `${joinerProfile?.name || 'Someone'} joined your meetup!`,
           `${joinerProfile?.name || 'Someone'} joined "${truncatedTitle}"`,
           '/',
           { meetup_id: meetupId, meetup_title: meetup.title }

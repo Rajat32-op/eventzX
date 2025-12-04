@@ -35,7 +35,6 @@ import {
 } from "lucide-react";
 import { useCommunities } from "@/hooks/useCommunities";
 import { useNavigate } from "react-router-dom";
-import { dummyCommunities } from "@/data/dummyData";
 
 export default function Communities() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,8 +47,7 @@ export default function Communities() {
   const { communities, loading, joinCommunity, createCommunity } = useCommunities();
   const navigate = useNavigate();
 
-  // Always show dummy data alongside real communities
-  const displayCommunities = [...communities, ...dummyCommunities];
+  const displayCommunities = communities;
 
   const campusCommunities = displayCommunities.filter(
     (c) => c.type === "Campus" || c.type === "Interest"
@@ -81,8 +79,8 @@ export default function Communities() {
       <header className="sticky top-0 z-40 glass border-b border-border">
         <div className="container px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center glow-primary">
-              <Users className="w-5 h-5 text-foreground" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden glow-primary">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="font-display font-bold text-lg text-foreground">
