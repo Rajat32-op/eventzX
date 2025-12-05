@@ -18,6 +18,7 @@ import Chat from "./pages/Chat";
 import ChatRoom from "./pages/ChatRoom";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
+import { AuthCallback } from "./pages/Authcallback";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
           <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/callback" element={<AuthCallback/>}/>
             <Route path="/onboarding" element={
               <ProtectedRoute>
                 <Onboarding />
