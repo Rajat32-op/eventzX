@@ -26,12 +26,12 @@ export default function Discover() {
     disconnectFriend,
   } = useFriendRequests();
 
-  const handleShareSpiritualX = () => {
+  const handleShareEventzX = () => {
     const url = window.location.origin;
     navigator.clipboard.writeText(url).then(() => {
       toast({
         title: "Link copied!",
-        description: "Share SpiritualX with your friends",
+        description: "Share EventzX with your friends",
       });
     }).catch(() => {
       toast({
@@ -284,12 +284,12 @@ export default function Discover() {
               Invite Friends
             </h3>
             <p className="text-foreground/80 text-sm mb-4">
-              Know someone who'd love SpiritualX? Share the app and grow your
+              Know someone who'd love EventzX? Share the app and grow your
               spiritual network.
             </p>
-            <Button variant="glass" onClick={handleShareSpiritualX}>
+            <Button variant="glass" onClick={handleShareEventzX}>
               <Share2 className="w-4 h-4 mr-2" />
-              Share SpiritualX
+              Share EventzX
             </Button>
             <div className="absolute top-0 right-0 w-24 h-24 bg-accent/20 rounded-full blur-2xl" />
           </CardContent>

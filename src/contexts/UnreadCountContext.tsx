@@ -31,9 +31,9 @@ export function UnreadCountProvider({ children }: { children: ReactNode }) {
       
       // Update document title with unread count
       if (count > 0) {
-        document.title = `(${count}) SpiritualX`;
+        document.title = `(${count}) EventzX`;
       } else {
-        document.title = 'SpiritualX';
+        document.title = 'EventzX';
       }
     } catch (error) {
       console.error("Error fetching total unread count:", error);

@@ -314,26 +314,15 @@ export const colleges = [
 ];
 
 export const interests = [
-  { id: "meditation", name: "Meditation", emoji: "🧘" },
-  { id: "yoga", name: "Yoga", emoji: "🪷" },
-  { id: "gita", name: "Bhagavad Gita", emoji: "📖" },
-  { id: "bible", name: "Bible Study", emoji: "✝️" },
-  { id: "quran", name: "Quran Study", emoji: "☪️" },
-  { id: "temple", name: "Temple Visits", emoji: "🛕" },
-  { id: "church", name: "Church Visits", emoji: "⛪" },
-  { id: "mosque", name: "Mosque Visits", emoji: "🕌" },
-  { id: "mindfulness", name: "Mindfulness", emoji: "🌸" },
-  { id: "nature-walks", name: "Nature Walks", emoji: "🌿" },
-  { id: "bhakti", name: "Bhakti", emoji: "🙏" },
-  { id: "satsang", name: "Satsang", emoji: "🪔" },
-  { id: "spiritual-discussions", name: "Spiritual Discussions", emoji: "💬" },
-  { id: "buddhism", name: "Buddhism", emoji: "☸️" },
-  { id: "zen", name: "Zen Practice", emoji: "🎋" },
-  { id: "pranayama", name: "Pranayama", emoji: "💨" },
-  { id: "vedanta", name: "Vedanta", emoji: "🕉️" },
-  { id: "morning-walks", name: "Morning Walks", emoji: "🌅" },
-  { id: "journaling", name: "Journaling", emoji: "📝" },
-  { id: "wellness", name: "General Wellness", emoji: "✨" },
+  { id: "hackathons-tech", name: "Hackathons & Tech", emoji: "💻" },
+  { id: "competitions-challenges", name: "Competitions & Challenges", emoji: "🏆" },
+  { id: "sports-fitness", name: "Sports & Fitness", emoji: "⚽" },
+  { id: "cultural-social", name: "Cultural & Social", emoji: "🎭" },
+  { id: "study-project-groups", name: "Study & Project Groups", emoji: "📚" },
+  { id: "clubs-communities", name: "Clubs & Communities", emoji: "👥" },
+  { id: "travel-cab-sharing", name: "Travel & Cab Sharing", emoji: "🚗" },
+  { id: "volunteering-social-good", name: "Volunteering & Social Good", emoji: "🤝" },
+  { id: "wellness-lifestyle", name: "Wellness & Lifestyle", emoji: "✨" }
 ];
 
 export const cities = [

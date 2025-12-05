@@ -189,7 +189,7 @@ export default function Index() {
                 <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div>
-                <h1 className="font-display font-bold text-lg text-foreground">SpiritualX</h1>
+                <h1 className="font-display font-bold text-lg text-foreground">EventzX</h1>
                 <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
                   <MapPin className="w-3 h-3" />
                   {(profile as any)?.is_student !== false 

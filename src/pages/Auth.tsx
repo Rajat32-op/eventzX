@@ -125,32 +125,31 @@ export default function Auth() {
               <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <span className="font-display text-3xl font-bold text-gradient">
-              SpiritualX
+              EventzX
             </span>
           </div>
 
           <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4 max-w-lg mx-auto leading-tight">
-            Connect With Your Spiritual{" "}
-            <span className="text-gradient">Community</span>{" "}
-             on Your College and City
+            Discover {" "}
+            <span className="text-gradient">events</span>{" "}
+             heppening in your college and city
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
- Connect with spiritually-minded people.
- Share events. Join communities. Grow together.           </p>
+Hackathons, competitions, clubs, workshops, sports, and everything happening around you.          </p>
 
           {/* Feature pills */}
           <div className="flex flex-wrap justify-center gap-3 mt-8">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border">
               <Users className="w-4 h-4 text-primary" />
-              <span className="text-sm text-foreground">Campus Communities</span>
+              <span className="text-sm text-foreground">College Events</span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border">
               <Heart className="w-4 h-4 text-secondary" />
-              <span className="text-sm text-foreground">Spiritual Meetups</span>
+              <span className="text-sm text-foreground">City Events</span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border">
               <Compass className="w-4 h-4 text-accent" />
-              <span className="text-sm text-foreground">City Community</span>
+              <span className="text-sm text-foreground">All Activities</span>
             </div>
           </div>
         </div>
@@ -273,7 +272,7 @@ export default function Auth() {
                     className="w-full" 
                     disabled={isLoading}
                   >
-                    {isLoading ? "Creating account..." : "Join SpiritualX"}
+                    {isLoading ? "Creating account..." : "Join EventzX"}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </form>

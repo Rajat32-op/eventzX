@@ -12,15 +12,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-const meetupTypes = [
-  { id: "meditation", name: "Meditation", emoji: "🧘" },
-  { id: "yoga", name: "Yoga", emoji: "🪷" },
-  { id: "temple", name: "Temple Visit", emoji: "🛕" },
-  { id: "church", name: "Church Visit", emoji: "⛪" },
-  { id: "mosque", name: "Mosque Visit", emoji: "🕌" },
-  { id: "walk", name: "Nature Walk", emoji: "🌿" },
-  { id: "discussion", name: "Discussion", emoji: "💬" },
-  { id: "other", name: "Other", emoji: "✨" },
+export const meetupTypes= [
+  { id: "hackathons-tech", name: "Hackathons & Tech", emoji: "💻" },
+  { id: "competitions-challenges", name: "Competitions & Challenges", emoji: "🏆" },
+  { id: "sports-fitness", name: "Sports & Fitness", emoji: "⚽" },
+  { id: "cultural-social", name: "Cultural & Social", emoji: "🎭" },
+  { id: "study-project-groups", name: "Study & Project Groups", emoji: "📚" },
+  { id: "clubs-communities", name: "Clubs & Communities", emoji: "👥" },
+  { id: "travel-cab-sharing", name: "Travel & Cab Sharing", emoji: "🚗" },
+  { id: "volunteering-social-good", name: "Volunteering & Social Good", emoji: "🤝" },
+  { id: "wellness-lifestyle", name: "Wellness & Lifestyle", emoji: "✨" }
 ];
 
 export default function CreateMeetup() {
