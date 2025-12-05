@@ -21,6 +21,7 @@ export default function Auth() {
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string }>({});
+  const [isEmailConfirmationPending, setIsEmailConfirmationPending] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -102,11 +103,7 @@ export default function Auth() {
         variant: "destructive",
       });
     } else {
-      toast({
-        title: "Welcome to SpiritualX! 🎉",
-        description: "Your account has been created. Let's set up your profile!",
-      });
-      navigate("/onboarding");
+      setIsEmailConfirmationPending(true);
     }
   };
 
@@ -220,7 +217,8 @@ export default function Auth() {
               </TabsContent>
 
               <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
+                {!isEmailConfirmationPending ? (
+                  <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name</Label>
                     <div className="relative">
@@ -279,6 +277,38 @@ export default function Auth() {
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </form>
+                ) : (
+                  <div className="space-y-4 text-center py-6 animate-fade-up">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Mail className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="font-display text-xl font-semibold text-foreground">
+                      📬 Check Your Email!
+                    </h3>
+                    <div className="space-y-2">
+                      <p className="text-muted-foreground">
+                        We've sent a confirmation link to
+                      </p>
+                      <p className="font-medium text-foreground">
+                        {email}
+                      </p>
+                      <p className="text-muted-foreground">
+                        Please click the link to activate your account and begin your spiritual journey with us.
+                      </p>
+                    </div>
+                    <div className="pt-4 border-t border-border">
+                      <p className="text-xs text-muted-foreground">
+                        Didn't receive it? Check your spam folder or{" "}
+                        <button
+                          onClick={() => setIsEmailConfirmationPending(false)}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          try again
+                        </button>
+                      </p>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
