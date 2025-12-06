@@ -63,7 +63,6 @@ export default function Profile() {
     bio: '',
     college: '',
     city: '',
-    journey: '',
   });
 
   useEffect(() => {
@@ -73,7 +72,6 @@ export default function Profile() {
         bio: profile.bio || '',
         college: profile.college || '',
         city: profile.city || '',
-        journey: profile.journey || '',
       });
     }
   }, [profile]);
@@ -228,7 +226,6 @@ export default function Profile() {
           bio: editForm.bio,
           college: editForm.college,
           city: editForm.city,
-          journey: editForm.journey,
           avatar_url: avatarUrl,
         })
         .eq('id', user.id);
@@ -408,16 +405,6 @@ export default function Profile() {
                         rows={3}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="journey">Spiritual Journey</Label>
-                      <Textarea
-                        id="journey"
-                        value={editForm.journey}
-                        onChange={(e) => setEditForm({ ...editForm, journey: e.target.value })}
-                        placeholder="Share your spiritual journey"
-                        rows={4}
-                      />
-                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={isSaving}>
@@ -566,20 +553,6 @@ export default function Profile() {
             )}
           </TabsContent>
         </Tabs>
-
-        {/* Spiritual Journey */}
-        {profile.journey && (
-          <Card className="border-border/50 mb-6">
-            <CardContent className="p-6">
-              <h3 className="font-display font-semibold text-lg text-foreground mb-3">
-                My Spiritual Journey
-              </h3>
-              <p className="text-foreground/80 leading-relaxed">
-                {profile.journey}
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Logout */}
         <Button

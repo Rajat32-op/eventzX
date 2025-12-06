@@ -128,7 +128,7 @@ export default function Onboarding() {
     } else {
       toast({
         title: "Profile complete! 🎉",
-        description: "Welcome to your spiritual community.",
+        description: "Welcome to your community.",
       });
       navigate("/");
     }
@@ -176,7 +176,7 @@ export default function Onboarding() {
                 <h3 className="font-display font-semibold">Are you a student?</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                This helps us show you the most relevant spiritual communities.
+                This helps us show you the most relevant communities.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <Button 
@@ -271,7 +271,7 @@ export default function Onboarding() {
                 <h3 className="font-display font-semibold">Select Your City</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Connect with spiritual communities in your city.
+                Connect with communities in your city.
               </p>
               <Select value={city} onValueChange={setCity}>
                 <SelectTrigger>
