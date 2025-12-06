@@ -85,7 +85,7 @@ export function FeedbackDialog() {
           <CardContent className="p-6 relative">
             
             <h3 className="text-foreground/80 text-xl font-bold mb-4">
-                Help Us I   mprove EventzX
+                Help Us Improve EventzX
             </h3>
             <Button variant="glass" onClick={()=>{setOpen(true)}}>
               <MessageSquare className="w-4 h-4 mr-2" />

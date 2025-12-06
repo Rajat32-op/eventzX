@@ -73,7 +73,7 @@ export default function Discover() {
                 Discover People
               </h1>
               <p className="text-xs text-muted-foreground">
-                Find your spiritual companions
+                Find your companions
               </p>
             </div>
           </div>
@@ -285,7 +285,7 @@ export default function Discover() {
             </h3>
             <p className="text-foreground/80 text-sm mb-4">
               Know someone who'd love EventzX? Share the app and grow your
-              spiritual network.
+              social network.
             </p>
             <Button variant="glass" onClick={handleShareEventzX}>
               <Share2 className="w-4 h-4 mr-2" />

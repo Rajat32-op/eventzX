@@ -87,7 +87,7 @@ export default function Communities() {
                 Your Circles
               </h1>
               <p className="text-xs text-muted-foreground">
-                Find your spiritual tribe
+                Find Your Social Community
               </p>
             </div>
           </div>
@@ -325,7 +325,7 @@ export default function Communities() {
             </h3>
             <p className="text-foreground/80 text-sm mb-4">
               Start a community for your specific interest. Gather people who
-              share your spiritual path.
+              share common interest
             </p>
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
@@ -343,7 +343,7 @@ export default function Communities() {
                     <Label htmlFor="name">Circle Name</Label>
                     <Input
                       id="name"
-                      placeholder="e.g., Morning Meditation Group"
+                      placeholder="e.g., Hackthon group"
                       value={newCommunity.name}
                       onChange={(e) =>
                         setNewCommunity({ ...newCommunity, name: e.target.value })

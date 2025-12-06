@@ -29,7 +29,6 @@ interface UserProfileData {
   college: string | null;
   city: string | null;
   bio: string | null;
-  journey: string | null;
   interests: string[];
   created_at: string;
 }
@@ -208,21 +207,6 @@ export default function UserProfile() {
           </CardContent>
         </Card>
 
-        {/* Spiritual Journey */}
-        {profile.journey && (
-          <Card className="border-border/50">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Heart className="w-5 h-5 text-accent" />
-                <h3 className="font-display font-semibold text-lg text-foreground">
-                  My Spiritual Journey
-                </h3>
-              </div>
-              <p className="text-foreground/80 leading-relaxed">{profile.journey}</p>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Shared Interests CTA */}
         {profile.interests.length > 0 && (
           <Card className="gradient-secondary border-0 overflow-hidden">
@@ -233,7 +217,7 @@ export default function UserProfile() {
               <p className="text-foreground/80 text-sm mb-4">
                 {profile.name} is interested in {profile.interests.slice(0, 2).join(" and ")}.
                 {connectionStatus === "connected"
-                  ? " Start a conversation about your shared spiritual journey!"
+                  ? " Start a conversation about your shared Event!"
                   : " Connect to chat!"}
               </p>
               {connectionStatus === "connected" ? (

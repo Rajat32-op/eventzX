@@ -92,7 +92,7 @@ export default function CreateMeetup() {
 
       toast({
         title: "Meetup Created! 🎉",
-        description: "Your spiritual meetup is now live. Others can join!",
+        description: "Your event is now live. Others can join!",
       });
       
       // Navigate back to home
@@ -198,7 +198,7 @@ export default function CreateMeetup() {
                 <Label htmlFor="title">Title</Label>
                 <Input
                   id="title"
-                  placeholder='e.g., "Morning Meditation at 6 AM"'
+                  placeholder='e.g., "Morning Gym Session at 7am"'
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required

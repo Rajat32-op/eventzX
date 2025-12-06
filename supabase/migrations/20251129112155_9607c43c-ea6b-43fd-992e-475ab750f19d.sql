@@ -7,7 +7,6 @@ CREATE TABLE public.profiles (
   college TEXT,
   city TEXT,
   bio TEXT,
-  journey TEXT,
   interests TEXT[] DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

@@ -292,7 +292,7 @@ Hackathons, competitions, clubs, workshops, sports, and everything happening aro
                         {email}
                       </p>
                       <p className="text-muted-foreground">
-                        Please click the link to activate your account and begin your spiritual journey with us.
+                        Please click the link to activate your account and begin your journey with us.
                       </p>
                     </div>
                     <div className="pt-4 border-t border-border">

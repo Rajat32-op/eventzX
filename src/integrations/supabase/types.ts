@@ -325,7 +325,6 @@ export type Database = {
           email: string
           id: string
           interests: string[] | null
-          journey: string | null
           name: string
           updated_at: string | null
         }
@@ -338,7 +337,6 @@ export type Database = {
           email: string
           id: string
           interests?: string[] | null
-          journey?: string | null
           name: string
           updated_at?: string | null
         }
@@ -351,7 +349,6 @@ export type Database = {
           email?: string
           id?: string
           interests?: string[] | null
-          journey?: string | null
           name?: string
           updated_at?: string | null
         }
