@@ -129,7 +129,7 @@ export function MeetupCard(props: MeetupCardProps) {
             {/* Host info */}
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8 border-2 border-primary/30">
-                <AvatarImage src={host.avatar} alt={host.name} />
+                <AvatarImage src={host.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${host.name}`} alt={host.name} />
                 <AvatarFallback className="bg-primary/20 text-primary text-xs">
                   {host.name.charAt(0)}
                 </AvatarFallback>

@@ -215,7 +215,7 @@ export function MeetupDetailDialog({ meetup, open, onOpenChange }: MeetupDetailD
                         navigate(`/user/${comment.user_id}`);
                       }}
                     >
-                      <AvatarImage src={comment.user.avatar_url || undefined} />
+                      <AvatarImage src={comment.user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user.name}`} />
                       <AvatarFallback className="bg-primary/20 text-primary text-xs">
                         {comment.user.name.charAt(0)}
                       </AvatarFallback>
@@ -261,7 +261,7 @@ export function MeetupDetailDialog({ meetup, open, onOpenChange }: MeetupDetailD
         <div className="px-6 py-4 border-t border-border">
           <div className="flex gap-2">
             <Avatar className="w-8 h-8 flex-shrink-0">
-              <AvatarImage src={user?.user_metadata?.avatar_url} />
+              <AvatarImage src={user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'user'}`} />
               <AvatarFallback className="bg-primary/20 text-primary text-xs">
                 {user?.email?.charAt(0).toUpperCase() || "U"}
               </AvatarFallback>
