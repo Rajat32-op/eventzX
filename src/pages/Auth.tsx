@@ -37,15 +37,24 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, profile } = useAuth();
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
 
   useEffect(() => {
-    if (user) {
-      navigate(from, { replace: true });
+    if (user && profile) {
+      // Check if profile is complete (has required fields)
+      const isProfileComplete = profile.college || profile.city;
+      
+      if (!isProfileComplete) {
+        // New user with incomplete profile - redirect to onboarding
+        navigate("/onboarding", { replace: true });
+      } else {
+        // Existing user with complete profile - redirect to intended page
+        navigate(from, { replace: true });
+      }
     }
-  }, [user, navigate, from]);
+  }, [user, profile, navigate, from]);
 
   // Resend cooldown timer
   useEffect(() => {
