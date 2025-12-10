@@ -50,16 +50,20 @@ export const requestOTP = async (email: string): Promise<OTPResponse> => {
       const result = data[0];
       
       // Send email via Supabase Edge Function
-      try {
-        await supabase.functions.invoke('send-otp-email', {
-          body: { 
-            email: email.toLowerCase().trim(), 
-            code: result.code 
-          }
-        });
-      } catch (emailError) {
-        console.error('Email sending failed:', emailError);
-        // Continue anyway - user can still use resend
+      const emailResponse = await supabase.functions.invoke('send-otp-email', {
+        body: { 
+          email: email.toLowerCase().trim(), 
+          code: result.code 
+        }
+      });
+
+      // Check if email sending failed
+      if (emailResponse.error) {
+        console.error('Email sending failed:', emailResponse.error);
+        return {
+          success: false,
+          message: 'Failed to send email. Please check your email address and try again.'
+        };
       }
 
       return {
