@@ -298,7 +298,7 @@ export default function Profile() {
             {/* Avatar */}
             <div className="flex items-end justify-between -mt-12 mb-4">
               <Avatar className="w-24 h-24 border-4 border-card">
-                <AvatarImage src={profile.avatar_url || undefined} alt={profile.name} />
+                <AvatarImage src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`} alt={profile.name} />
                 <AvatarFallback className="text-2xl bg-primary/20 text-primary">
                   {profile.name.charAt(0)}
                 </AvatarFallback>
@@ -600,7 +600,7 @@ export default function Profile() {
                   }}
                 >
                   <Avatar className="w-12 h-12 border-2 border-primary/30">
-                    <AvatarImage src={connection.avatar_url || undefined} alt={connection.name} />
+                    <AvatarImage src={connection.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${connection.name}`} alt={connection.name} />
                     <AvatarFallback className="bg-primary/20 text-primary">
                       {connection.name.charAt(0)}
                     </AvatarFallback>
