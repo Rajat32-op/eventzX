@@ -222,6 +222,8 @@ export default function Auth() {
               title: "Welcome to EventzX! 🎉",
               description: "Your account has been created successfully.",
             });
+            // Redirect to onboarding for new users
+            navigate("/onboarding", { replace: true });
           }
           setShowOTPVerification(false);
         }
