@@ -128,35 +128,119 @@ Best regards,
 EventzX Team
   `
 
-  // Using Deno's SMTP client (you'll need to install it)
-  // Or use fetch to call an external email API
+  // Send email via Brevo (Sendinblue) SMTP using fetch API
+  // Construct SMTP-style email using Brevo's API
   
-  // Option 1: Using SMTP directly with Deno
-  // This requires deno.land/x/smtp or similar package
+  // For Brevo, we'll use their transactional email API
+  const brevoApiKey = Deno.env.get('BREVO_API_KEY') || ''
   
-  // Option 2: Using Supabase's built-in Auth email (simpler)
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  if (brevoApiKey) {
+    // Use Brevo API (recommended - more reliable than SMTP)
+    const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': brevoApiKey
+      },
+      body: JSON.stringify({
+        sender: {
+          name: SMTP_FROM_NAME,
+          email: SMTP_FROM_EMAIL
+        },
+        to: [{ email: to }],
+        subject: subject,
+        htmlContent: htmlBody,
+        textContent: textBody
+      })
+    })
 
-  // Send via Supabase Auth's email system (uses your SMTP config)
-  // This is a workaround - sending a magic link but with custom email template
-  const { error } = await supabase.auth.admin.generateLink({
-    type: 'magiclink',
-    email: to,
-    options: {
-      data: {
-        verification_code: code,
-        is_otp: true
-      }
+    if (!brevoResponse.ok) {
+      const errorData = await brevoResponse.text()
+      throw new Error(`Brevo API error: ${brevoResponse.status} - ${errorData}`)
     }
-  })
 
-  if (error) {
-    throw error
+    return { success: true }
   }
+  
+  // Fallback: Use native SMTP
+  // Import SMTP library for Deno
+  const encoder = new TextEncoder()
+  
+  try {
+    const conn = await Deno.connect({
+      hostname: SMTP_HOSTNAME,
+      port: SMTP_PORT,
+    })
 
-  return { success: true }
+    const reader = conn.readable.getReader()
+    const writer = conn.writable.getWriter()
+
+    // Helper to read SMTP response
+    const readResponse = async () => {
+      const { value } = await reader.read()
+      return new TextDecoder().decode(value)
+    }
+
+    // Helper to send SMTP command
+    const sendCommand = async (command: string) => {
+      await writer.write(encoder.encode(command + '\r\n'))
+    }
+
+    // SMTP handshake
+    await readResponse() // 220 greeting
+    await sendCommand(`EHLO ${SMTP_HOSTNAME}`)
+    await readResponse() // 250 response
+
+    // SMTP AUTH LOGIN
+    await sendCommand('AUTH LOGIN')
+    await readResponse() // 334 Username
+    await sendCommand(btoa(SMTP_USERNAME))
+    await readResponse() // 334 Password
+    await sendCommand(btoa(SMTP_PASSWORD))
+    await readResponse() // 235 Authentication successful
+
+    // Send email
+    await sendCommand(`MAIL FROM:<${SMTP_FROM_EMAIL}>`)
+    await readResponse() // 250 OK
+    await sendCommand(`RCPT TO:<${to}>`)
+    await readResponse() // 250 OK
+    await sendCommand('DATA')
+    await readResponse() // 354 Start mail input
+
+    // Email headers and body
+    const emailContent = [
+      `From: ${SMTP_FROM_NAME} <${SMTP_FROM_EMAIL}>`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      'MIME-Version: 1.0',
+      'Content-Type: multipart/alternative; boundary="boundary123"',
+      '',
+      '--boundary123',
+      'Content-Type: text/plain; charset=UTF-8',
+      '',
+      textBody,
+      '',
+      '--boundary123',
+      'Content-Type: text/html; charset=UTF-8',
+      '',
+      htmlBody,
+      '',
+      '--boundary123--',
+      '.',
+    ].join('\r\n')
+
+    await sendCommand(emailContent)
+    await readResponse() // 250 OK
+    await sendCommand('QUIT')
+    await readResponse() // 221 Bye
+
+    conn.close()
+    return { success: true }
+  } catch (smtpError) {
+    console.error('SMTP Error:', smtpError)
+    throw new Error(`SMTP connection failed: ${smtpError.message}`)
+  }
 }
 
 serve(async (req: Request) => {
