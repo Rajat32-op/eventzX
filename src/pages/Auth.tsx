@@ -125,6 +125,32 @@ export default function Auth() {
     
     setIsLoading(true);
     
+    // First check if email already exists
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const checkResponse = await supabase.functions.invoke('send-otp-email', {
+        body: { action: 'check-email', email }
+      });
+
+      if (checkResponse.data?.exists) {
+        setIsLoading(false);
+        toast({
+          title: "Email already exists",
+          description: "This email is already registered. Please sign in instead.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } catch (error) {
+      setIsLoading(false);
+      toast({
+        title: "Error",
+        description: "Failed to verify email. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Request OTP instead of directly signing up
     const otpResponse = await requestOTP(email);
     setIsLoading(false);

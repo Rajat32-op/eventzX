@@ -243,6 +243,22 @@ EventzX Team
   }
 }
 
+async function checkEmailExists(email: string): Promise<boolean> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  
+  // Check if email exists in profiles table
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('email', email)
+    .single()
+  
+  return !!data && !error
+}
+
 serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -250,8 +266,27 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { email, code } = await req.json() as RequestBody
+    const body = await req.json()
+    const { action, email, code } = body
 
+    // Handle email check request
+    if (action === 'check-email') {
+      if (!email) {
+        return new Response(
+          JSON.stringify({ error: 'Email is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const exists = await checkEmailExists(email)
+      
+      return new Response(
+        JSON.stringify({ exists }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Handle send OTP request (default behavior)
     if (!email || !code) {
       return new Response(
         JSON.stringify({ error: 'Email and code are required' }),
