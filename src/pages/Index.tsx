@@ -41,17 +41,17 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-const categories = [
-  { id: "all", name: "All" },
-  { id: "meditation", name: "Meditation" },
-  { id: "yoga", name: "Yoga" },
-  { id: "temple", name: "Temple Visit" },
-  { id: "church", name: "Church Visit" },
-  { id: "mosque", name: "Mosque Visit" },
-  { id: "nature", name: "Nature Walk" },
-  { id: "discussion", name: "Discussion" },
+export const categories = [
+  { id: "hackathons-tech", name: "Hackathons & Tech",  },
+  { id: "competitions-challenges", name: "Competitions & Challenges", },
+  { id: "sports-fitness", name: "Sports & Fitness",  },
+  { id: "cultural-social", name: "Cultural & Social",  },
+  { id: "study-project-groups", name: "Study & Project Groups", },
+  { id: "clubs-communities", name: "Clubs & Communities",  },
+  { id: "travel-cab-sharing", name: "Travel & Cab Sharing", },
+  { id: "volunteering-social-good", name: "Volunteering & Social Good", },
+  { id: "wellness-lifestyle", name: "Wellness & Lifestyle",  }
 ];
-
 export default function Index() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
