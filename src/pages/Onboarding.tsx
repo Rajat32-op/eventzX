@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,24 +12,73 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sparkles, GraduationCap, MapPin, Heart, ArrowRight, Check, Search } from "lucide-react";
-import { colleges, interests as interestsData, cities } from "@/data/colleges";
+import { Sparkles, GraduationCap, MapPin, Heart, ArrowRight, Check, Search, Plus } from "lucide-react";
+import { interests as interestsData, cities } from "@/data/colleges";
+import { fetchColleges, addCollege, type College } from "@/lib/colleges";
 
 export default function Onboarding() {
   const [step, setStep] = useState(1);
   const [isStudent, setIsStudent] = useState<boolean | null>(null);
   const [college, setCollege] = useState("");
+  const [selectedCollegeName, setSelectedCollegeName] = useState("");
   const [city, setCity] = useState("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [collegeSearch, setCollegeSearch] = useState("");
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
   const [citySearch, setCitySearch] = useState("");
+  
+  // Database colleges
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [isLoadingColleges, setIsLoadingColleges] = useState(true);
+  
+  // Add college dialog
+  const [showAddCollegeDialog, setShowAddCollegeDialog] = useState(false);
+  const [newCollegeName, setNewCollegeName] = useState("");
+  const [newCollegeCity, setNewCollegeCity] = useState("");
+  const [newCollegeType, setNewCollegeType] = useState("Other");
+  const [isAddingCollege, setIsAddingCollege] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
   const { updateProfile } = useAuth();
+  
+  const collegeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch colleges from database on mount
+  useEffect(() => {
+    async function loadColleges() {
+      setIsLoadingColleges(true);
+      const data = await fetchColleges();
+      setColleges(data);
+      setIsLoadingColleges(false);
+    }
+    loadColleges();
+  }, []);
+
+  // Handle click outside to close college dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (collegeDropdownRef.current && !collegeDropdownRef.current.contains(event.target as Node)) {
+        setShowCollegeDropdown(false);
+      }
+    }
+
+    if (showCollegeDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showCollegeDropdown]);
 
   // Filter colleges based on search
   const filteredColleges = useMemo(() => {
@@ -40,7 +89,7 @@ export default function Onboarding() {
       c.city.toLowerCase().includes(searchLower) ||
       c.type.toLowerCase().includes(searchLower)
     );
-  }, [collegeSearch]);
+  }, [collegeSearch, colleges]);
 
   // Filter cities based on search
   const filteredCities = useMemo(() => {
@@ -55,6 +104,44 @@ export default function Onboarding() {
         ? prev.filter(i => i !== interestId)
         : [...prev, interestId]
     );
+  };
+
+  const handleAddCollege = async () => {
+    if (!newCollegeName.trim() || !newCollegeCity.trim()) {
+      toast({
+        title: "Please fill all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAddingCollege(true);
+    const result = await addCollege(newCollegeName, newCollegeCity, newCollegeType);
+    setIsAddingCollege(false);
+
+    if (result.success && result.college) {
+      toast({
+        title: "College added!",
+        description: "Your college has been added to our database.",
+      });
+      // Refresh colleges list
+      const updatedColleges = await fetchColleges();
+      setColleges(updatedColleges);
+      // Select the newly added college
+      setCollege(result.college.id);
+      setSelectedCollegeName(result.college.name);
+      setCollegeSearch(result.college.name);
+      setShowAddCollegeDialog(false);
+      setNewCollegeName("");
+      setNewCollegeCity("");
+      setNewCollegeType("Other");
+    } else {
+      toast({
+        title: "Failed to add college",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleNext = () => {
@@ -209,43 +296,82 @@ export default function Onboarding() {
               <p className="text-sm text-muted-foreground">
                 This helps us connect you with students from your college.
               </p>
-              <Select value={college} onValueChange={setCollege}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose your college..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  <div className="sticky top-0 bg-background p-2 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search college, city or type..."
-                        value={collegeSearch}
-                        onChange={(e) => setCollegeSearch(e.target.value)}
-                        className="pl-9 h-10"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredColleges.length > 0 ? (
-                      filteredColleges.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          <span className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              
+              {/* Custom Search Input */}
+              <div className="relative" ref={collegeDropdownRef}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search college, city or type..."
+                    value={collegeSearch}
+                    onChange={(e) => {
+                      setCollegeSearch(e.target.value);
+                      setShowCollegeDropdown(true);
+                    }}
+                    onFocus={() => setShowCollegeDropdown(true)}
+                    className="pl-9"
+                  />
+                </div>
+                
+                {/* Dropdown Results */}
+                {showCollegeDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-hidden">
+                    <div className="max-h-60 overflow-y-auto">
+                      {isLoadingColleges ? (
+                        <div className="px-4 py-8 text-sm text-center text-muted-foreground">
+                          Loading colleges...
+                        </div>
+                      ) : filteredColleges.length > 0 ? (
+                        filteredColleges.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => {
+                              setCollege(c.id);
+                              setSelectedCollegeName(c.name);
+                              setCollegeSearch(c.name);
+                              setShowCollegeDropdown(false);
+                            }}
+                            className="w-full px-4 py-2.5 text-left hover:bg-muted transition-colors flex items-center gap-2 border-b border-border last:border-b-0"
+                          >
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
                               {c.type}
                             </Badge>
-                            {c.name}
-                          </span>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-4 text-sm text-center text-muted-foreground">
-                        No colleges found
-                      </div>
-                    )}
+                            <span className="text-sm truncate">{c.name}</span>
+                            <span className="text-xs text-muted-foreground ml-auto shrink-0">{c.city}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-sm text-center space-y-3">
+                          <p className="text-muted-foreground">
+                            College not found?
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setShowCollegeDropdown(false);
+                              setShowAddCollegeDialog(true);
+                            }}
+                            className="w-full"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Your College
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </SelectContent>
-              </Select>
+                )}
+              </div>
+
+              {/* Selected College Display */}
+              {selectedCollegeName && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                  <Check className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">{selectedCollegeName}</span>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setIsStudent(null)} className="flex-1">
                   Back
@@ -371,6 +497,90 @@ export default function Onboarding() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add College Dialog */}
+      <Dialog open={showAddCollegeDialog} onOpenChange={setShowAddCollegeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-primary" />
+              Add New College
+            </DialogTitle>
+            <DialogDescription>
+              Can't find your college? Add it to our database and help other students discover it too!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="college-name">College Name *</Label>
+              <Input
+                id="college-name"
+                placeholder="e.g., ABC Institute of Technology"
+                value={newCollegeName}
+                onChange={(e) => setNewCollegeName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="college-city">City *</Label>
+              <Select value={newCollegeCity} onValueChange={setNewCollegeCity}>
+                <SelectTrigger id="college-city">
+                  <SelectValue placeholder="Select city..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  <div className="max-h-48 overflow-y-auto">
+                    {cities.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </div>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="college-type">Type</Label>
+              <Select value={newCollegeType} onValueChange={setNewCollegeType}>
+                <SelectTrigger id="college-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IIT">IIT</SelectItem>
+                  <SelectItem value="NIT">NIT</SelectItem>
+                  <SelectItem value="IIIT">IIIT</SelectItem>
+                  <SelectItem value="IIM">IIM</SelectItem>
+                  <SelectItem value="AIIMS">AIIMS</SelectItem>
+                  <SelectItem value="IISER">IISER</SelectItem>
+                  <SelectItem value="Central">Central University</SelectItem>
+                  <SelectItem value="State">State University</SelectItem>
+                  <SelectItem value="Private">Private University</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddCollegeDialog(false);
+                setNewCollegeName("");
+                setNewCollegeCity("");
+                setNewCollegeType("Other");
+              }}
+              disabled={isAddingCollege}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="glow"
+              onClick={handleAddCollege}
+              disabled={isAddingCollege || !newCollegeName.trim() || !newCollegeCity.trim()}
+            >
+              {isAddingCollege ? "Adding..." : "Add College"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
