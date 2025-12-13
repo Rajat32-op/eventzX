@@ -335,7 +335,7 @@ export default function Auth() {
           <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4 max-w-lg mx-auto leading-tight">
             Discover {" "}
             <span className="text-gradient">events</span>{" "}
-             heppening in your college and city
+             happening in your college and city
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
 Hackathons, competitions, clubs, workshops, sports, and everything happening around you.          </p>
