@@ -12,8 +12,8 @@ CREATE TABLE public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create meetups table
-CREATE TABLE public.meetups (
+-- Create events table
+CREATE TABLE public.events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   creator_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -27,13 +27,13 @@ CREATE TABLE public.meetups (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create meetup_attendees junction table
-CREATE TABLE public.meetup_attendees (
+-- Create event_attendees junction table
+CREATE TABLE public.event_attendees (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  meetup_id UUID NOT NULL REFERENCES public.meetups(id) ON DELETE CASCADE,
+  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(meetup_id, user_id)
+  UNIQUE(event_id, user_id)
 );
 
 -- Create communities table
@@ -69,8 +69,8 @@ CREATE TABLE public.friend_requests (
 
 -- Enable RLS on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.meetups ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.meetup_attendees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.event_attendees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.communities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.friend_requests ENABLE ROW LEVEL SECURITY;
@@ -91,40 +91,40 @@ ON public.profiles FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = id);
 
--- Meetups policies
-CREATE POLICY "Meetups are viewable by authenticated users"
-ON public.meetups FOR SELECT
+-- events policies
+CREATE POLICY "events are viewable by authenticated users"
+ON public.events FOR SELECT
 TO authenticated
 USING (true);
 
-CREATE POLICY "Users can create meetups"
-ON public.meetups FOR INSERT
+CREATE POLICY "Users can create events"
+ON public.events FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = creator_id);
 
-CREATE POLICY "Users can update their own meetups"
-ON public.meetups FOR UPDATE
+CREATE POLICY "Users can update their own events"
+ON public.events FOR UPDATE
 TO authenticated
 USING (auth.uid() = creator_id);
 
-CREATE POLICY "Users can delete their own meetups"
-ON public.meetups FOR DELETE
+CREATE POLICY "Users can delete their own events"
+ON public.events FOR DELETE
 TO authenticated
 USING (auth.uid() = creator_id);
 
--- Meetup attendees policies
+-- event attendees policies
 CREATE POLICY "Attendees are viewable by authenticated users"
-ON public.meetup_attendees FOR SELECT
+ON public.event_attendees FOR SELECT
 TO authenticated
 USING (true);
 
-CREATE POLICY "Users can join meetups"
-ON public.meetup_attendees FOR INSERT
+CREATE POLICY "Users can join events"
+ON public.event_attendees FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can leave meetups"
-ON public.meetup_attendees FOR DELETE
+CREATE POLICY "Users can leave events"
+ON public.event_attendees FOR DELETE
 TO authenticated
 USING (auth.uid() = user_id);
 
@@ -217,8 +217,8 @@ CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER update_meetups_updated_at
-  BEFORE UPDATE ON public.meetups
+CREATE TRIGGER update_events_updated_at
+  BEFORE UPDATE ON public.events
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 CREATE TRIGGER update_friend_requests_updated_at
@@ -226,5 +226,5 @@ CREATE TRIGGER update_friend_requests_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Enable realtime for key tables
-ALTER PUBLICATION supabase_realtime ADD TABLE public.meetups;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.events;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.friend_requests;

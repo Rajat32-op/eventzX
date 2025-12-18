@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Card,CardContent} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ export function FeedbackDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name.trim() || !email.trim() || rating === 0 || !message.trim()) {
       toast({
         title: "Please fill all fields",
@@ -81,15 +81,16 @@ export function FeedbackDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Card className="gradient-primary border-0 overflow-hidden mt-6">
+        <Card className="gradient-primary 
+border-0 overflow-hidden mt-6">
           <CardContent className="p-6 relative">
-            
+
             <h3 className="text-foreground/80 text-xl font-bold mb-4">
-                Help Us Improve EventzX
+              Help Us Improve EventzX
             </h3>
-            <Button variant="glass" onClick={()=>{setOpen(true)}}>
+            <Button variant="glass" className="text-white" onClick={() => { setOpen(true) }}>
               <MessageSquare className="w-4 h-4 mr-2" />
-                Give Feedback
+              Give Feedback
             </Button>
             <div className="absolute top-0 right-0 w-24 h-24 bg-accent/20 rounded-full blur-2xl" />
           </CardContent>
@@ -140,11 +141,10 @@ export function FeedbackDialog() {
                   className="transition-transform hover:scale-110 disabled:opacity-50"
                 >
                   <Star
-                    className={`w-8 h-8 ${
-                      star <= (hoveredRating || rating)
+                    className={`w-8 h-8 ${star <= (hoveredRating || rating)
                         ? "fill-yellow-400 text-yellow-400"
                         : "text-gray-300"
-                    }`}
+                      }`}
                   />
                 </button>
               ))}

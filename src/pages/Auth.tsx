@@ -333,9 +333,9 @@ export default function Auth() {
           </div>
 
           <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4 max-w-lg mx-auto leading-tight">
-            Discover {" "}
+            Discover and Share{" "}
             <span className="text-gradient">events</span>{" "}
-             happening in your college and city
+             happening in India, your college and your city
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
 Hackathons, competitions, clubs, workshops, sports, and everything happening around you.          </p>
@@ -415,6 +415,17 @@ Hackathons, competitions, clubs, workshops, sports, and everything happening aro
                     {isLoading ? "Signing in..." : "Sign In"}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
+
+                  <div className="text-center mt-4">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-primary hover:underline"
+                      onClick={() => navigate('/forgot-password')}
+                    >
+                      Forgot Password?
+                    </Button>
+                  </div>
                 </form>
               </TabsContent>
 

@@ -17,7 +17,7 @@ export function BottomNav() {
   const { totalUnreadCount } = useUnreadCount();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-background/80 dark:backdrop-blur-lg border-t border-border shadow-[0_-4px_12px_rgba(0,0,0,0.08)] dark:shadow-none">
       <div className="flex items-center justify-around px-2 py-3 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;

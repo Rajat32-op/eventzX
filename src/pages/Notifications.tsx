@@ -22,9 +22,9 @@ const getNotificationIcon = (type: string) => {
   switch (type) {
     case 'friend_request':
       return <UserPlus className="w-5 h-5 text-primary" />;
-    case 'meetup_join':
+    case 'event_join':
       return <Calendar className="w-5 h-5 text-accent" />;
-    case 'meetup_update':
+    case 'event_update':
       return <Calendar className="w-5 h-5 text-secondary" />;
     case 'community_join':
       return <Users className="w-5 h-5 text-primary" />;
@@ -49,7 +49,7 @@ export default function Notifications() {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border">
+      <header className="sticky top-0 z-40 bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg border-b border-border">
         <div className="container px-4 py-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">

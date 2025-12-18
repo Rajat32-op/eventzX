@@ -39,7 +39,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { MeetupCard } from "@/components/MeetupCard";
+import { EventCard } from "@/components/EventCard";
 import { colleges, cities } from "@/data/colleges";
 
 export default function Profile() {
@@ -48,8 +48,8 @@ export default function Profile() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ connections: 0, created: 0, joined: 0 });
-  const [createdMeetups, setCreatedMeetups] = useState<any[]>([]);
-  const [joinedMeetups, setJoinedMeetups] = useState<any[]>([]);
+  const [createdevents, setCreatedevents] = useState<any[]>([]);
+  const [joinedevents, setJoinedevents] = useState<any[]>([]);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -94,30 +94,30 @@ export default function Profile() {
     }
   };
 
-  const deleteMeetup = async (meetupId: string) => {
+  const deleteevent = async (eventId: string) => {
     if (!user) return;
 
     try {
       const { error } = await supabase
-        .from('meetups')
+        .from('events')
         .delete()
-        .eq('id', meetupId)
+        .eq('id', eventId)
         .eq('creator_id', user.id);
 
       if (error) throw error;
 
       toast({
-        title: 'Meetup deleted',
-        description: 'Your meetup has been deleted successfully.',
+        title: 'event deleted',
+        description: 'Your event has been deleted successfully.',
       });
 
-      // Refresh the meetups list
+      // Refresh the events list
       fetchProfileData();
     } catch (error) {
-      console.error('Error deleting meetup:', error);
+      console.error('Error deleting event:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete meetup. Please try again.',
+        description: 'Failed to delete event. Please try again.',
         variant: 'destructive',
       });
     }
@@ -162,20 +162,20 @@ export default function Profile() {
         .eq('status', 'accepted')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
-      // Fetch created meetups
+      // Fetch created events
       const { data: created } = await supabase
-        .from('meetups')
-        .select('*, creator:profiles!meetups_creator_id_fkey(name, avatar_url), meetup_attendees(count)')
+        .from('events')
+        .select('*, creator:profiles!events_creator_id_fkey(name, avatar_url), event_attendees(count)')
         .eq('creator_id', user.id)
         .order('created_at', { ascending: false });
 
-      // Fetch joined meetups
+      // Fetch joined events
       const { data: joinedData } = await supabase
-        .from('meetup_attendees')
-        .select('meetup:meetups(*, creator:profiles!meetups_creator_id_fkey(name, avatar_url), meetup_attendees(count))')
+        .from('event_attendees')
+        .select('event:events(*, creator:profiles!events_creator_id_fkey(name, avatar_url), event_attendees(count))')
         .eq('user_id', user.id);
 
-      const joined = joinedData?.map(item => item.meetup).filter(Boolean) || [];
+      const joined = joinedData?.map(item => item.event).filter(Boolean) || [];
 
       setStats({
         connections: connectionsCount || 0,
@@ -183,8 +183,8 @@ export default function Profile() {
         joined: joined.length || 0,
       });
 
-      setCreatedMeetups(created || []);
-      setJoinedMeetups(joined);
+      setCreatedevents(created || []);
+      setJoinedevents(joined);
     } catch (error) {
       console.error('Error fetching profile data:', error);
     } finally {
@@ -272,7 +272,7 @@ export default function Profile() {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border">
+      <header className="sticky top-0 z-40 bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg border-b border-border">
         <div className="container px-4 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
@@ -298,9 +298,9 @@ export default function Profile() {
             {/* Avatar */}
             <div className="flex items-end justify-between -mt-12 mb-4">
               <Avatar className="w-24 h-24 border-4 border-card">
-                <AvatarImage src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`} alt={profile.name} />
-                <AvatarFallback className="text-2xl bg-primary/20 text-primary">
-                  {profile.name.charAt(0)}
+                <AvatarImage src={profile.avatar_url} alt={profile.name} />
+                <AvatarFallback className="text-2xl bg-primary/20 text-primary font-bold">
+                  {profile.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -322,8 +322,8 @@ export default function Profile() {
                       <Label>Profile Picture</Label>
                       <div className="flex items-center gap-4">
                         <Avatar className="w-20 h-20 border-2 border-primary/30">
-                          <AvatarImage src={avatarPreview || profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.name}`} />
-                          <AvatarFallback>{profile?.name?.charAt(0) || "U"}</AvatarFallback>
+                          <AvatarImage src={avatarPreview || profile?.avatar_url} />
+                          <AvatarFallback className="text-xl bg-primary/20 text-primary font-bold">{profile?.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                         </Avatar>
                         <div>
                           <input
@@ -500,7 +500,7 @@ export default function Profile() {
           <TabsList className="w-full grid grid-cols-2 mb-4">
             <TabsTrigger value="created" className="font-display">
               <Users className="w-4 h-4 mr-2" />
-              My Meetups
+              My events
             </TabsTrigger>
             <TabsTrigger value="joined" className="font-display">
               <Calendar className="w-4 h-4 mr-2" />
@@ -513,21 +513,21 @@ export default function Profile() {
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
-            ) : createdMeetups.length === 0 ? (
+            ) : createdevents.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>You haven't created any meetups yet.</p>
+                <p>You haven't created any events yet.</p>
                 <Button variant="outline" className="mt-4" onClick={() => navigate("/create")}>
-                  Create Your First Meetup
+                  Create Your First event
                 </Button>
               </div>
             ) : (
-              createdMeetups.map((meetup) => (
-                <MeetupCard 
-                  key={meetup.id} 
-                  meetup={{
-                    ...meetup,
+              createdevents.map((event) => (
+                <EventCard 
+                  key={event.id} 
+                  event={{
+                    ...event,
                     isOwner: true,
-                    onDelete: () => deleteMeetup(meetup.id)
+                    onDelete: () => deleteevent(event.id)
                   }} 
                 />
               ))
@@ -539,16 +539,16 @@ export default function Profile() {
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
-            ) : joinedMeetups.length === 0 ? (
+            ) : joinedevents.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>You haven't joined any meetups yet.</p>
+                <p>You haven't joined any events yet.</p>
                 <Button variant="outline" className="mt-4" onClick={() => navigate("/")}>
-                  Discover Meetups
+                  Discover events
                 </Button>
               </div>
             ) : (
-              joinedMeetups.map((meetup) => (
-                <MeetupCard key={meetup.id} meetup={meetup} />
+              joinedevents.map((event) => (
+                <EventCard key={event.id} event={event} />
               ))
             )}
           </TabsContent>
@@ -600,9 +600,9 @@ export default function Profile() {
                   }}
                 >
                   <Avatar className="w-12 h-12 border-2 border-primary/30">
-                    <AvatarImage src={connection.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${connection.name}`} alt={connection.name} />
-                    <AvatarFallback className="bg-primary/20 text-primary">
-                      {connection.name.charAt(0)}
+                    <AvatarImage src={connection.avatar_url} alt={connection.name} />
+                    <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                      {connection.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">

@@ -62,7 +62,7 @@ export default function Discover() {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border">
+      <header className="sticky top-0 z-40 bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg border-b border-border">
         <div className="container px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl overflow-hidden">
@@ -109,13 +109,10 @@ export default function Discover() {
                     <div className="flex items-center gap-4">
                       <Avatar className="w-12 h-12 border-2 border-secondary/20">
                         <AvatarImage
-                          src={
-                            request.sender?.avatar_url ||
-                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${request.sender?.name}`
-                          }
+                          src={request.sender?.avatar_url}
                         />
-                        <AvatarFallback className="bg-secondary/20 text-secondary">
-                          {request.sender?.name?.charAt(0) || "?"}
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {request.sender?.name?.charAt(0).toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -181,10 +178,7 @@ export default function Discover() {
                     <div className="flex items-start gap-4">
                       <Avatar className="w-16 h-16 border-2 border-primary/20">
                         <AvatarImage
-                          src={
-                            profile.avatar_url ||
-                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`
-                          }
+                          src={profile.avatar_url}
                         />
                         <AvatarFallback className="bg-primary/20 text-primary text-lg">
                           {profile.name.charAt(0)}

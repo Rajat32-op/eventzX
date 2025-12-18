@@ -42,7 +42,7 @@ EventzX Team
                 🎉 EventzX
               </h1>
               <p style="margin: 10px 0 0; color: #e0e7ff; font-size: 14px;">
-                Discover events in your college and city
+                Discover and share events in your college and city
               </p>
             </td>
           </tr>

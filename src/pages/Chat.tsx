@@ -32,7 +32,7 @@ export default function Chat() {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border">
+      <header className="sticky top-0 z-40 bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg border-b border-border">
         <div className="container px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center relative">
@@ -103,16 +103,9 @@ export default function Chat() {
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <Avatar className="w-12 h-12">
-                      <AvatarImage
-                        src={
-                          conversation.avatar_url ||
-                          `https://api.dicebear.com/7.x/${
-                            conversation.is_community ? "shapes" : "avataaars"
-                          }/svg?seed=${conversation.name}`
-                        }
-                      />
-                      <AvatarFallback className="bg-primary/20 text-primary">
-                        {conversation.name.charAt(0)}
+                      <AvatarImage src={conversation.avatar_url} />
+                      <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                        {conversation.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     {conversation.is_community && (

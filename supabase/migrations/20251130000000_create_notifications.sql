@@ -2,7 +2,7 @@
 CREATE TABLE public.notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('friend_request', 'meetup_join', 'meetup_update', 'community_join', 'message')),
+  type TEXT NOT NULL CHECK (type IN ('friend_request', 'event_join', 'event_update', 'community_join', 'message')),
   title TEXT NOT NULL,
   message TEXT NOT NULL,
   read BOOLEAN NOT NULL DEFAULT false,

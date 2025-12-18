@@ -108,7 +108,7 @@ export default function ChatRoom() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border">
+      <header className="sticky top-0 z-40 bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg border-b border-border">
         <div className="container px-4 py-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate("/chat")}>
@@ -117,13 +117,10 @@ export default function ChatRoom() {
             <div className="relative">
               <Avatar className="w-10 h-10">
                 <AvatarImage
-                  src={
-                    chatInfo?.avatar_url ||
-                    `https://api.dicebear.com/7.x/${isCommunity ? "shapes" : "avataaars"}/svg?seed=${chatInfo?.name || id}`
-                  }
+                  src={chatInfo?.avatar_url}
                 />
-                <AvatarFallback className="bg-primary/20 text-primary">
-                  {chatInfo?.name?.charAt(0) || "?"}
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  {chatInfo?.name?.charAt(0).toUpperCase() || "C"}
                 </AvatarFallback>
               </Avatar>
               {isCommunity && (
@@ -180,13 +177,10 @@ export default function ChatRoom() {
                 {!isOwn && (
                   <Avatar className="w-8 h-8">
                     <AvatarImage
-                      src={
-                        message.sender?.avatar_url ||
-                        `https://api.dicebear.com/7.x/avataaars/svg?seed=${message.sender?.name}`
-                      }
+                      src={message.sender?.avatar_url}
                     />
-                    <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                      {message.sender?.name?.charAt(0) || "?"}
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                      {message.sender?.name?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 )}
@@ -219,7 +213,7 @@ export default function ChatRoom() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border glass p-4">
+      <div className="border-t border-border bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg p-4">
         <div className="flex items-center gap-2">
           <Input
             placeholder="Type a message..."

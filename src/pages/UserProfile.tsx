@@ -84,7 +84,7 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border">
+      <header className="sticky top-0 z-40 bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg border-b border-border">
         <div className="container px-4 py-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -109,10 +109,7 @@ export default function UserProfile() {
             <div className="flex items-end justify-between -mt-12 mb-4">
               <Avatar className="w-24 h-24 border-4 border-card">
                 <AvatarImage
-                  src={
-                    profile.avatar_url ||
-                    `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`
-                  }
+                  src={profile.avatar_url}
                 />
                 <AvatarFallback className="bg-primary/20 text-primary text-2xl">
                   {profile.name.charAt(0)}

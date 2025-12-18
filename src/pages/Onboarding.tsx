@@ -23,8 +23,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sparkles, GraduationCap, MapPin, Heart, ArrowRight, Check, Search, Plus } from "lucide-react";
-import { interests as interestsData, cities } from "@/data/colleges";
+import { interests as interestsData } from "@/data/colleges";
 import { fetchColleges, addCollege, type College } from "@/lib/colleges";
+import { fetchCities, addCity as addCityToDb, type City } from "@/lib/cities";
 
 export default function Onboarding() {
   const [step, setStep] = useState(1);
@@ -37,15 +38,20 @@ export default function Onboarding() {
   const [collegeSearch, setCollegeSearch] = useState("");
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
   const [citySearch, setCitySearch] = useState("");
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
   
-  // Database colleges
+  // Database colleges and cities
   const [colleges, setColleges] = useState<College[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [isLoadingColleges, setIsLoadingColleges] = useState(true);
+  const [isLoadingCities, setIsLoadingCities] = useState(true);
   
   // Add college dialog
   const [showAddCollegeDialog, setShowAddCollegeDialog] = useState(false);
   const [newCollegeName, setNewCollegeName] = useState("");
   const [newCollegeCity, setNewCollegeCity] = useState("");
+  const [newCollegeCitySearch, setNewCollegeCitySearch] = useState("");
+  const [showNewCollegeCityDropdown, setShowNewCollegeCityDropdown] = useState(false);
   const [newCollegeType, setNewCollegeType] = useState("Other");
   const [isAddingCollege, setIsAddingCollege] = useState(false);
 
@@ -54,6 +60,8 @@ export default function Onboarding() {
   const { updateProfile } = useAuth();
   
   const collegeDropdownRef = useRef<HTMLDivElement>(null);
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
+  const newCollegeCityDropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch colleges from database on mount
   useEffect(() => {
@@ -66,19 +74,36 @@ export default function Onboarding() {
     loadColleges();
   }, []);
 
-  // Handle click outside to close college dropdown
+  // Fetch cities from database on mount
+  useEffect(() => {
+    async function loadCities() {
+      setIsLoadingCities(true);
+      const data = await fetchCities();
+      setCities(data);
+      setIsLoadingCities(false);
+    }
+    loadCities();
+  }, []);
+
+  // Handle click outside to close dropdowns
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (collegeDropdownRef.current && !collegeDropdownRef.current.contains(event.target as Node)) {
         setShowCollegeDropdown(false);
       }
+      if (cityDropdownRef.current && !cityDropdownRef.current.contains(event.target as Node)) {
+        setShowCityDropdown(false);
+      }
+      if (newCollegeCityDropdownRef.current && !newCollegeCityDropdownRef.current.contains(event.target as Node)) {
+        setShowNewCollegeCityDropdown(false);
+      }
     }
 
-    if (showCollegeDropdown) {
+    if (showCollegeDropdown || showCityDropdown || showNewCollegeCityDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [showCollegeDropdown]);
+  }, [showCollegeDropdown, showCityDropdown, showNewCollegeCityDropdown]);
 
   // Filter colleges based on search
   const filteredColleges = useMemo(() => {
@@ -95,8 +120,15 @@ export default function Onboarding() {
   const filteredCities = useMemo(() => {
     if (!citySearch.trim()) return cities;
     const searchLower = citySearch.toLowerCase();
-    return cities.filter(c => c.toLowerCase().includes(searchLower));
-  }, [citySearch]);
+    return cities.filter(c => c.name.toLowerCase().includes(searchLower));
+  }, [citySearch, cities]);
+
+  // Filter cities for add college dialog
+  const filteredNewCollegeCities = useMemo(() => {
+    if (!newCollegeCitySearch.trim()) return cities;
+    const searchLower = newCollegeCitySearch.toLowerCase();
+    return cities.filter(c => c.name.toLowerCase().includes(searchLower));
+  }, [newCollegeCitySearch, cities]);
 
   const toggleInterest = (interestId: string) => {
     setSelectedInterests(prev =>
@@ -116,7 +148,21 @@ export default function Onboarding() {
     }
 
     setIsAddingCollege(true);
-    const result = await addCollege(newCollegeName, newCollegeCity, newCollegeType);
+    
+    // Check if city exists, if not add it first
+    let cityName = newCollegeCity.trim();
+    const existingCity = cities.find(c => c.name.toLowerCase() === cityName.toLowerCase());
+    if (!existingCity) {
+      const newCity = await addCityToDb(cityName);
+      if (newCity) {
+        setCities(prev => [...prev, newCity]);
+        cityName = newCity.name; // Use the DB-returned city name
+      }
+    } else {
+      cityName = existingCity.name; // Use existing city name
+    }
+    
+    const result = await addCollege(newCollegeName, cityName, newCollegeType);
     setIsAddingCollege(false);
 
     if (result.success && result.college) {
@@ -399,38 +445,75 @@ export default function Onboarding() {
               <p className="text-sm text-muted-foreground">
                 Connect with communities in your city.
               </p>
-              <Select value={city} onValueChange={setCity}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose your city..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  <div className="sticky top-0 bg-background p-2 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search city..."
-                        value={citySearch}
-                        onChange={(e) => setCitySearch(e.target.value)}
-                        className="pl-9 h-10"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredCities.length > 0 ? (
+              <div className="relative" ref={cityDropdownRef}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search and select your city..."
+                    value={citySearch}
+                    onChange={(e) => {
+                      setCitySearch(e.target.value);
+                      setShowCityDropdown(true);
+                    }}
+                    onFocus={() => setShowCityDropdown(true)}
+                    className="pl-9"
+                  />
+                </div>
+                {showCityDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                    {isLoadingCities ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        Loading cities...
+                      </div>
+                    ) : filteredCities.length > 0 ? (
                       filteredCities.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
+                        <div
+                          key={c.id}
+                          className="px-4 py-3 hover:bg-accent/50 cursor-pointer transition-colors border-b border-border last:border-0"
+                          onClick={() => {
+                            setCity(c.name);
+                            setCitySearch(c.name);
+                            setShowCityDropdown(false);
+                          }}
+                        >
+                          <p className="font-medium text-foreground">{c.name}</p>
+                        </div>
                       ))
+                    ) : citySearch.trim() ? (
+                      <div className="p-4">
+                        <p className="text-sm text-muted-foreground text-center mb-3">
+                          City not found
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={async () => {
+                            const newCity = await addCityToDb(citySearch.trim());
+                            if (newCity) {
+                              setCity(newCity.name);
+                              setCitySearch(newCity.name);
+                              setCities(prev => [...prev, newCity]);
+                              setShowCityDropdown(false);
+                              toast({
+                                title: "City Added",
+                                description: `${newCity.name} has been added to the database.`,
+                              });
+                            }
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add "{citySearch.trim()}"
+                        </Button>
+                      </div>
                     ) : (
-                      <div className="px-2 py-4 text-sm text-center text-muted-foreground">
-                        No cities found
+                      <div className="p-4 text-sm text-center text-muted-foreground">
+                        Start typing to search for a city
                       </div>
                     )}
                   </div>
-                </SelectContent>
-              </Select>
+                )}
+              </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setIsStudent(null)} className="flex-1">
                   Back
@@ -522,20 +605,76 @@ export default function Onboarding() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="college-city">City *</Label>
-              <Select value={newCollegeCity} onValueChange={setNewCollegeCity}>
-                <SelectTrigger id="college-city">
-                  <SelectValue placeholder="Select city..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  <div className="max-h-48 overflow-y-auto">
-                    {cities.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
+              <div className="relative" ref={newCollegeCityDropdownRef}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="college-city"
+                    placeholder="Search and select city..."
+                    value={newCollegeCitySearch}
+                    onChange={(e) => {
+                      setNewCollegeCitySearch(e.target.value);
+                      setShowNewCollegeCityDropdown(true);
+                    }}
+                    onFocus={() => setShowNewCollegeCityDropdown(true)}
+                    className="pl-9"
+                  />
+                </div>
+                {showNewCollegeCityDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {isLoadingCities ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        Loading cities...
+                      </div>
+                    ) : filteredNewCollegeCities.length > 0 ? (
+                      filteredNewCollegeCities.map((c) => (
+                        <div
+                          key={c.id}
+                          className="px-4 py-2.5 hover:bg-accent/50 cursor-pointer transition-colors border-b border-border last:border-0"
+                          onClick={() => {
+                            setNewCollegeCity(c.name);
+                            setNewCollegeCitySearch(c.name);
+                            setShowNewCollegeCityDropdown(false);
+                          }}
+                        >
+                          <p className="font-medium text-foreground">{c.name}</p>
+                        </div>
+                      ))
+                    ) : newCollegeCitySearch.trim() ? (
+                      <div className="p-4">
+                        <p className="text-sm text-muted-foreground text-center mb-3">
+                          City not found
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={async () => {
+                            const newCity = await addCityToDb(newCollegeCitySearch.trim());
+                            if (newCity) {
+                              setNewCollegeCity(newCity.name);
+                              setNewCollegeCitySearch(newCity.name);
+                              setCities(prev => [...prev, newCity]);
+                              setShowNewCollegeCityDropdown(false);
+                              toast({
+                                title: "City Added",
+                                description: `${newCity.name} has been added to the database.`,
+                              });
+                            }
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add "{newCollegeCitySearch.trim()}"
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="p-4 text-sm text-center text-muted-foreground">
+                        Start typing to search for a city
+                      </div>
+                    )}
                   </div>
-                </SelectContent>
-              </Select>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="college-type">Type</Label>

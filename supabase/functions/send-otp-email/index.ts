@@ -21,8 +21,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-async function sendEmail(to: string, code: string) {
-  const subject = 'Your EventzX Verification Code'
+async function sendEmail(to: string, code: string, type: 'signup' | 'password-reset' = 'signup') {
+  const subject = type === 'password-reset' 
+    ? 'Reset Your EventzX Password' 
+    : 'Your EventzX Verification Code'
+  
+  const title = type === 'password-reset' 
+    ? 'Password Reset Code' 
+    : 'Verification Code'
+  
+  const message = type === 'password-reset'
+    ? 'We received a request to reset your EventzX account password. Please use the verification code below to proceed with resetting your password:'
+    : 'Thank you for signing up with EventzX! Please use the following verification code to complete your registration:'
   
   const htmlBody = `
 <!DOCTYPE html>
@@ -45,7 +55,7 @@ async function sendEmail(to: string, code: string) {
                 🎉 EventzX
               </h1>
               <p style="margin: 10px 0 0; color: #e0e7ff; font-size: 14px;">
-                Discover events in your college and city
+                Discover and share events in your college and city
               </p>
             </td>
           </tr>
@@ -54,11 +64,11 @@ async function sendEmail(to: string, code: string) {
           <tr>
             <td style="padding: 40px;">
               <h2 style="margin: 0 0 20px; color: #1f2937; font-size: 24px; font-weight: 600;">
-                Verification Code
+                ${title}
               </h2>
               
               <p style="margin: 0 0 30px; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                Thank you for signing up with EventzX! Please use the following verification code to complete your registration:
+                ${message}
               </p>
               
               <!-- OTP Code Box -->
@@ -286,7 +296,7 @@ serve(async (req: Request) => {
       )
     }
 
-    // Handle send OTP request (default behavior)
+    // Handle send OTP request (default behavior and password reset)
     if (!email || !code) {
       return new Response(
         JSON.stringify({ error: 'Email and code are required' }),
@@ -294,7 +304,8 @@ serve(async (req: Request) => {
       )
     }
 
-    await sendEmail(email, code)
+    const emailType = action === 'password-reset' ? 'password-reset' : 'signup'
+    await sendEmail(email, code, emailType)
 
     return new Response(
       JSON.stringify({ success: true, message: 'Email sent successfully' }),

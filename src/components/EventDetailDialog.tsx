@@ -29,8 +29,8 @@ interface Comment {
   };
 }
 
-interface MeetupDetailDialogProps {
-  meetup: any;
+interface eventDetailDialogProps {
+  event: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -55,7 +55,7 @@ function formatTimeAgo(dateString: string) {
   return `${years}y ago`;
 }
 
-function formatMeetupTime(date: string, time: string) {
+function formateventTime(date: string, time: string) {
   try {
     const dateObj = new Date(date + 'T' + time);
     return dateObj.toLocaleDateString('en-US', {
@@ -70,7 +70,7 @@ function formatMeetupTime(date: string, time: string) {
   }
 }
 
-export function MeetupDetailDialog({ meetup, open, onOpenChange }: MeetupDetailDialogProps) {
+export function EventDetailDialog({ event, open, onOpenChange }: eventDetailDialogProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(false);
@@ -80,26 +80,26 @@ export function MeetupDetailDialog({ meetup, open, onOpenChange }: MeetupDetailD
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (open && meetup?.id) {
+    if (open && event?.id) {
       fetchComments();
     }
-  }, [open, meetup?.id]);
+  }, [open, event?.id]);
 
   const fetchComments = async () => {
-    if (!meetup?.id) return;
+    if (!event?.id) return;
 
     try {
       setLoading(true);
       const { data, error } = await (supabase as any)
-        .from("meetup_comments")
+        .from("event_comments")
         .select(`
           id,
           content,
           created_at,
           user_id,
-          user:profiles!meetup_comments_user_id_fkey(id, name, avatar_url)
+          user:profiles!event_comments_user_id_fkey(id, name, avatar_url)
         `)
-        .eq("meetup_id", meetup.id)
+        .eq("event_id", event.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -118,12 +118,12 @@ export function MeetupDetailDialog({ meetup, open, onOpenChange }: MeetupDetailD
   };
 
   const handleSubmitComment = async () => {
-    if (!user || !meetup?.id || !newComment.trim()) return;
+    if (!user || !event?.id || !newComment.trim()) return;
 
     try {
       setSubmitting(true);
-      const { error } = await (supabase as any).from("meetup_comments").insert({
-        meetup_id: meetup.id,
+      const { error } = await (supabase as any).from("event_comments").insert({
+        event_id: event.id,
         user_id: user.id,
         content: newComment.trim(),
       });
@@ -154,7 +154,7 @@ export function MeetupDetailDialog({ meetup, open, onOpenChange }: MeetupDetailD
 
     try {
       const { error } = await (supabase as any)
-        .from("meetup_comments")
+        .from("event_comments")
         .delete()
         .eq("id", commentId)
         .eq("user_id", user.id);
@@ -177,15 +177,15 @@ export function MeetupDetailDialog({ meetup, open, onOpenChange }: MeetupDetailD
     }
   };
 
-  if (!meetup) return null;
+  if (!event) return null;
 
-  const attendees = meetup.meetup_attendees?.[0]?.count || meetup.attendee_count || 0;
+  const attendees = event.event_attendees?.[0]?.count || event.attendee_count || 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <DialogTitle className="text-xl font-display">{meetup.title}</DialogTitle>
+          <DialogTitle className="text-xl font-display">{event.title}</DialogTitle>
           <DialogDescription className="flex items-center gap-2 text-sm">
             <MessageCircle className="w-4 h-4" />
             {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
@@ -215,9 +215,9 @@ export function MeetupDetailDialog({ meetup, open, onOpenChange }: MeetupDetailD
                         navigate(`/user/${comment.user_id}`);
                       }}
                     >
-                      <AvatarImage src={comment.user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user.name}`} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                        {comment.user.name.charAt(0)}
+                      <AvatarImage src={comment.user.avatar_url} />
+                      <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
+                        {comment.user.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
@@ -261,9 +261,9 @@ export function MeetupDetailDialog({ meetup, open, onOpenChange }: MeetupDetailD
         <div className="px-6 py-4 border-t border-border">
           <div className="flex gap-2">
             <Avatar className="w-8 h-8 flex-shrink-0">
-              <AvatarImage src={user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'user'}`} />
-              <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                {user?.email?.charAt(0).toUpperCase() || "U"}
+              <AvatarImage src={user?.user_metadata?.avatar_url} />
+              <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
+                {user?.user_metadata?.name?.charAt(0).toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">

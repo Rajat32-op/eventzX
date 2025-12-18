@@ -6,9 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MeetupDetailDialog } from "./MeetupDetailDialog";
+import { EventDetailDialog } from "./EventDetailDialog";
 
-interface MeetupCardPropsIndividual {
+interface eventCardPropsIndividual {
   title: string;
   description: string;
   time: string;
@@ -27,15 +27,15 @@ interface MeetupCardPropsIndividual {
   isOwner?: boolean;
 }
 
-interface MeetupCardPropsObject {
-  meetup: any;
+interface eventCardPropsObject {
+  event: any;
 }
 
-type MeetupCardProps = MeetupCardPropsIndividual | MeetupCardPropsObject;
+type eventCardProps = eventCardPropsIndividual | eventCardPropsObject;
 
-function formatMeetupTime(date: string, time: string) {
-  const meetupDate = new Date(date + 'T' + time);
-  return meetupDate.toLocaleDateString('en-US', { 
+function formateventTime(date: string, time: string) {
+  const eventDate = new Date(date + 'T' + time);
+  return eventDate.toLocaleDateString('en-US', { 
     month: 'short', 
     day: 'numeric',
     hour: 'numeric',
@@ -43,34 +43,35 @@ function formatMeetupTime(date: string, time: string) {
   });
 }
 
-export function MeetupCard(props: MeetupCardProps) {
+export function EventCard(props: eventCardProps) {
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const navigate = useNavigate();
   
-  // Check if we received a meetup object or individual props
-  let title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined, isOwner, creatorId, fullMeetup;
+  // Check if we received a event object or individual props
+  let title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined, isOwner, creatorId, fullevent, eventLink;
   
-  if ('meetup' in props) {
-    const { meetup } = props;
-    fullMeetup = meetup;
-    title = meetup.title;
-    description = meetup.description;
-    time = formatMeetupTime(meetup.date, meetup.time);
-    location = meetup.location;
-    category = meetup.category;
+  if ('event' in props) {
+    const { event } = props;
+    fullevent = event;
+    title = event.title;
+    description = event.description;
+    time = formateventTime(event.date, event.time);
+    location = event.location;
+    category = event.category;
     host = {
-      name: meetup.creator?.name || 'Unknown',
-      avatar: meetup.creator?.avatar_url,
-      college: meetup.creator?.college || 'Unknown'
+      name: event.creator?.name || 'Unknown',
+      avatar: event.creator?.avatar_url,
+      college: event.creator?.college || 'Unknown'
     };
-    attendees = meetup.meetup_attendees?.[0]?.count || 0;
-    maxAttendees = meetup.max_attendees;
-    onJoin = meetup.onJoin;
-    onDelete = meetup.onDelete;
-    isJoined = meetup.isJoined || false;
-    isOwner = meetup.isOwner || false;
-    creatorId = meetup.creator_id;
+    attendees = event.event_attendees?.[0]?.count || 0;
+    maxAttendees = event.max_attendees;
+    onJoin = event.onJoin;
+    onDelete = event.onDelete;
+    isJoined = event.isJoined || false;
+    isOwner = event.isOwner || false;
+    creatorId = event.creator_id;
+    eventLink = event.event_link;
   } else {
     ({ title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined = false, isOwner = false } = props);
   }
@@ -129,9 +130,9 @@ export function MeetupCard(props: MeetupCardProps) {
             {/* Host info */}
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8 border-2 border-primary/30">
-                <AvatarImage src={host.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${host.name}`} alt={host.name} />
-                <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                  {host.name.charAt(0)}
+                <AvatarImage src={host.avatar} alt={host.name} />
+                <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
+                  {host.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
@@ -155,7 +156,7 @@ export function MeetupCard(props: MeetupCardProps) {
 
           {/* Action buttons */}
           <div className="flex flex-col items-end gap-2">
-            {fullMeetup && (
+            {fullevent && (
               <Button
                 variant="outline"
                 size="sm"
@@ -182,6 +183,19 @@ export function MeetupCard(props: MeetupCardProps) {
                 <Trash2 className="w-4 h-4 mr-1" />
                 Delete
               </Button>
+            ) : eventLink ? (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(eventLink, '_blank');
+                }}
+                className="min-w-[80px]"
+              >
+                Register
+                <ChevronRight className="w-4 h-4" />
+              </Button>
             ) : (
               <Button
                 variant={isJoined ? "outline" : "default"}
@@ -201,9 +215,9 @@ export function MeetupCard(props: MeetupCardProps) {
       </CardContent>
     </Card>
 
-    {fullMeetup && (
-      <MeetupDetailDialog
-        meetup={fullMeetup}
+    {fullevent && (
+      <EventDetailDialog
+        event={fullevent}
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
       />
