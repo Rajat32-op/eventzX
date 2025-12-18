@@ -33,14 +33,16 @@ import {
   Loader2,
   ArrowLeft,
   Camera,
+  Search,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { EventCard } from "@/components/EventCard";
 import { colleges } from "@/data/colleges";
+import { fetchCities, type City } from "@/lib/cities";
 
 // Get city for a college
 const getCityForCollege = (collegeName: string): string | null => {
@@ -70,6 +72,13 @@ export default function Profile() {
     college: '',
     city: '',
   });
+  
+  // City dropdown states for non-students
+  const [cities, setCities] = useState<City[]>([]);
+  const [citySearch, setCitySearch] = useState('');
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (profile) {
@@ -79,6 +88,7 @@ export default function Profile() {
         college: profile.college || '',
         city: profile.city || '',
       });
+      setCitySearch(profile.city || '');
     }
   }, [profile]);
 
@@ -87,6 +97,40 @@ export default function Profile() {
       fetchProfileData();
     }
   }, [user]);
+
+  // Fetch cities for non-students
+  useEffect(() => {
+    if ((profile as any)?.is_student === false) {
+      async function loadCities() {
+        setIsLoadingCities(true);
+        const data = await fetchCities();
+        setCities(data);
+        setIsLoadingCities(false);
+      }
+      loadCities();
+    }
+  }, [profile]);
+
+  // Handle click outside to close city dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (cityDropdownRef.current && !cityDropdownRef.current.contains(event.target as Node)) {
+        setShowCityDropdown(false);
+      }
+    }
+
+    if (showCityDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showCityDropdown]);
+
+  // Filter cities based on search
+  const filteredCities = useMemo(() => {
+    if (!citySearch.trim()) return cities;
+    const searchLower = citySearch.toLowerCase();
+    return cities.filter(c => c.name.toLowerCase().includes(searchLower));
+  }, [citySearch, cities]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -408,12 +452,49 @@ export default function Profile() {
                     {(profile as any)?.is_student === false && (
                       <div className="space-y-2">
                         <Label htmlFor="city">City</Label>
-                        <Input
-                          id="city"
-                          value={editForm.city}
-                          onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                          placeholder="Enter your city"
-                        />
+                        <div className="relative" ref={cityDropdownRef}>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                              id="city"
+                              placeholder="Search and select your city..."
+                              value={citySearch}
+                              onChange={(e) => {
+                                setCitySearch(e.target.value);
+                                setShowCityDropdown(true);
+                              }}
+                              onFocus={() => setShowCityDropdown(true)}
+                              className="pl-9"
+                            />
+                          </div>
+                          {showCityDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                              {isLoadingCities ? (
+                                <div className="p-4 text-center text-sm text-muted-foreground">
+                                  Loading cities...
+                                </div>
+                              ) : filteredCities.length > 0 ? (
+                                filteredCities.map((c) => (
+                                  <div
+                                    key={c.id}
+                                    className="px-4 py-2.5 hover:bg-accent/50 cursor-pointer transition-colors border-b border-border last:border-0"
+                                    onClick={() => {
+                                      setEditForm({ ...editForm, city: c.name });
+                                      setCitySearch(c.name);
+                                      setShowCityDropdown(false);
+                                    }}
+                                  >
+                                    <p className="font-medium text-foreground">{c.name}</p>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="p-4 text-sm text-center text-muted-foreground">
+                                  {citySearch.trim() ? "City not found" : "Start typing to search"}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                     <div className="space-y-2">
