@@ -76,8 +76,8 @@ export default function Communities() {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border">
-        <div className="container px-4 py-4">
+      <header className="sticky top-0 z-40 bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg border-b border-border ">
+        <div className="container px-4 py-4 ">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl overflow-hidden glow-primary">
               <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
@@ -137,14 +137,9 @@ export default function Communities() {
                         <div className="flex items-center gap-4">
                           <div className="relative">
                             <Avatar className="w-14 h-14 rounded-xl">
-                              <AvatarImage
-                                src={
-                                  community.image_url ||
-                                  `https://api.dicebear.com/7.x/shapes/svg?seed=${community.name}`
-                                }
-                              />
-                              <AvatarFallback className="rounded-xl bg-primary/20 text-primary">
-                                {community.name.charAt(0)}
+                              <AvatarImage src={community.image_url} />
+                              <AvatarFallback className="rounded-xl bg-primary/20 text-primary font-semibold">
+                                {community.name.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             {community.is_joined && (
@@ -235,14 +230,9 @@ export default function Communities() {
                         <div className="flex items-center gap-4">
                           <div className="relative">
                             <Avatar className="w-14 h-14 rounded-xl">
-                              <AvatarImage
-                                src={
-                                  community.image_url ||
-                                  `https://api.dicebear.com/7.x/shapes/svg?seed=${community.name}`
-                                }
-                              />
-                              <AvatarFallback className="rounded-xl bg-accent/20 text-accent">
-                                {community.name.charAt(0)}
+                              <AvatarImage src={community.image_url} />
+                              <AvatarFallback className="rounded-xl bg-accent/20 text-accent font-semibold">
+                                {community.name.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             {community.is_joined && (

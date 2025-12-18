@@ -130,35 +130,35 @@ export type Database = {
           },
         ]
       }
-      meetup_attendees: {
+      event_attendees: {
         Row: {
           id: string
           joined_at: string | null
-          meetup_id: string
+          event_id: string
           user_id: string
         }
         Insert: {
           id?: string
           joined_at?: string | null
-          meetup_id: string
+          event_id: string
           user_id: string
         }
         Update: {
           id?: string
           joined_at?: string | null
-          meetup_id?: string
+          event_id?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "meetup_attendees_meetup_id_fkey"
-            columns: ["meetup_id"]
+            foreignKeyName: "event_attendees_event_id_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "meetups"
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "meetup_attendees_user_id_fkey"
+            foreignKeyName: "event_attendees_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -166,7 +166,7 @@ export type Database = {
           },
         ]
       }
-      meetups: {
+      events: {
         Row: {
           category: string
           created_at: string | null
@@ -208,7 +208,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "meetups_creator_id_fkey"
+            foreignKeyName: "events_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "profiles"

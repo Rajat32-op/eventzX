@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-export const meetupTypes= [
+export const eventTypes= [
   { id: "hackathons-tech", name: "Hackathons & Tech", emoji: "💻" },
   { id: "competitions-challenges", name: "Competitions & Challenges", emoji: "🏆" },
   { id: "sports-fitness", name: "Sports & Fitness", emoji: "⚽" },
@@ -21,19 +21,22 @@ export const meetupTypes= [
   { id: "clubs-communities", name: "Clubs & Communities", emoji: "👥" },
   { id: "travel-cab-sharing", name: "Travel & Cab Sharing", emoji: "🚗" },
   { id: "volunteering-social-good", name: "Volunteering & Social Good", emoji: "🤝" },
-  { id: "wellness-lifestyle", name: "Wellness & Lifestyle", emoji: "✨" }
+  { id: "wellness-lifestyle", name: "Wellness & Lifestyle", emoji: "✨" },
+  {id:"workshops",name:"Workshops",emoji:"🛠️"}
 ];
 
-export default function CreateMeetup() {
+export default function Createevent() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
-  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [eventLink, setEventLink] = useState("");
   const [maxAttendees, setMaxAttendees] = useState("");
   const [showInCampus, setShowInCampus] = useState(true);
   const [showInCity, setShowInCity] = useState(false);
+  const [showNational, setShowNational] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
@@ -46,61 +49,76 @@ export default function CreateMeetup() {
     if (!user) {
       toast({
         title: "Please sign in",
-        description: "You need to be signed in to create a meetup.",
+        description: "You need to be signed in to create a event.",
         variant: "destructive",
       });
       return;
     }
 
-    // Validate at least one visibility option is selected for students
-    if ((profile as any)?.is_student !== false && !showInCampus && !showInCity) {
-      toast({
-        title: "Select visibility",
-        description: "Please select at least Campus or City Circle.",
-        variant: "destructive",
-      });
-      return;
+    // Validate at least one visibility option is selected
+    if ((profile as any)?.is_student !== false) {
+      // For students: at least campus or city must be selected
+      if (!showInCampus && !showInCity && !showNational) {
+        toast({
+          title: "Select visibility",
+          description: "Please select at least one option: Campus, City, or National.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      // For non-students: at least city or national must be selected
+      if (!showInCity && !showNational) {
+        toast({
+          title: "Select visibility",
+          description: "Please select at least City or National.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.from("meetups").insert({
+      const { data, error } = await supabase.from("events").insert({
         creator_id: user.id,
         title,
         description,
-        category,
+        category: categories.join(','), // Store multiple categories as comma-separated
         location,
         date,
         time,
+        event_link: eventLink || null,
         max_attendees: maxAttendees ? parseInt(maxAttendees) : null,
         show_in_campus: (profile as any)?.is_student !== false ? showInCampus : false,
-        show_in_city: (profile as any)?.is_student !== false ? showInCity : true,
+        show_in_city: showInCity,
+        show_national: showNational,
         city: profile?.city || null,
         college: profile?.college || null,
       }).select();
 
       if (error) throw error;
 
-      // Auto-join creator to the meetup
+      // Auto-join creator to the event
       if (data && data[0]) {
-        await supabase.from("meetup_attendees").insert({
-          meetup_id: data[0].id,
+        await supabase.from("event_attendees").insert({
+          event_id: data[0].id,
           user_id: user.id,
         });
       }
 
       toast({
-        title: "Meetup Created! 🎉",
+        title: "event Created! 🎉",
         description: "Your event is now live. Others can join!",
       });
       
       // Navigate back to home
       navigate("/");
     } catch (error: any) {
-      console.error("Error creating meetup:", error);
+      console.error("Error creating event:", error);
       toast({
-        title: "Error creating meetup",
+        title: "Error creating event",
         description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
@@ -112,7 +130,7 @@ export default function CreateMeetup() {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border">
+      <header className="sticky top-0 z-40 bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg border-b border-border">
         <div className="container px-4 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -120,7 +138,7 @@ export default function CreateMeetup() {
             </Button>
             <div>
               <h1 className="font-display font-bold text-lg text-foreground">
-                Create Meetup
+                Create event
               </h1>
               <p className="text-xs text-muted-foreground">
                 Bring your campus together
@@ -136,62 +154,84 @@ export default function CreateMeetup() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Sparkles className="w-5 h-5 text-primary" />
-              Meetup Details
+              event Details
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Category Selection */}
+            <form onSubmit={handleSubmit}>
               <div className="space-y-3">
-                <Label>What type of meetup?</Label>
+                <Label>What type of event? (select all that apply)</Label>
                 <div className="flex flex-wrap gap-2">
-                  {meetupTypes.map((type) => (
+                  {eventTypes.map((type) => (
                     <Badge
                       key={type.id}
-                      variant={category === type.id ? "default" : "interest"}
-                      className="cursor-pointer text-sm py-2 px-3"
-                      onClick={() => setCategory(type.id)}
+                      variant={categories.includes(type.id) ? "default" : "interest"}
+                      className="cursor-pointer text-sm py-2 px-3 transition-all"
+                      onClick={() => {
+                        setCategories(prev => 
+                          prev.includes(type.id)
+                            ? prev.filter(c => c !== type.id) // Remove if already selected
+                            : [...prev, type.id] // Add if not selected
+                        );
+                      }}
                     >
                       <span className="mr-1.5">{type.emoji}</span>
                       {type.name}
                     </Badge>
                   ))}
                 </div>
-              </div>
+                {categories.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {categories.length} {categories.length === 1 ? 'category' : 'categories'} selected
+                  </p>
+                )}
+                  
+                </div>
+              
 
-              {/* Campus/City Multi-Select for Students */}
-              {(profile as any)?.is_student !== false && (
-                <div className="space-y-3">
-                  <Label>Where should this appear? (select at least one)</Label>
-                  <div className="grid grid-cols-2 gap-2">
+              {/* Campus/City/National Multi-Select */}
+              <div className="space-y-3">
+                <Label>Where should this appear? (select at least one)</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Badge
+                    variant={showNational ? "default" : "interest"}
+                    className="cursor-pointer text-sm py-3 px-4 justify-center"
+                    onClick={() => setShowNational(!showNational)}
+                  >
+                    <span className="mr-1.5">🌍</span>
+                    National
+                  </Badge>
+                  {(profile as any)?.is_student !== false && (
                     <Badge
                       variant={showInCampus ? "default" : "interest"}
                       className="cursor-pointer text-sm py-3 px-4 justify-center"
                       onClick={() => setShowInCampus(!showInCampus)}
                     >
                       <span className="mr-1.5">🎓</span>
-                      Campus Feed
+                      Campus
                     </Badge>
-                    <Badge
-                      variant={showInCity ? "default" : "interest"}
-                      className="cursor-pointer text-sm py-3 px-4 justify-center"
-                      onClick={() => setShowInCity(!showInCity)}
-                    >
-                      <span className="mr-1.5">🌆</span>
-                      City Circle
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {showInCampus && showInCity 
+                  )}
+                  <Badge
+                    variant={showInCity ? "default" : "interest"}
+                    className="cursor-pointer text-sm py-3 px-4 justify-center"
+                    onClick={() => setShowInCity(!showInCity)}
+                  >
+                    <span className="mr-1.5">🌆</span>
+                    City
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {showNational 
+                    ? "Visible to everyone across India"
+                    : showInCampus && showInCity 
                       ? "Visible to both your campus students and city community"
                       : showInCampus 
                         ? "Only visible to students from your campus"
                         : showInCity
                           ? "Only visible to your city community"
                           : "Please select at least one option"}
-                  </p>
-                </div>
-              )}
+                </p>
+              </div>
 
               {/* Title */}
               <div className="space-y-2">
@@ -210,12 +250,27 @@ export default function CreateMeetup() {
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  placeholder="What's this meetup about? Any requirements?"
+                  placeholder="What's this event about? Any requirements?"
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   required
                 />
+              </div>
+
+              {/* Event Link (Optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="eventLink">Registration Link (optional)</Label>
+                <Input
+                  id="eventLink"
+                  type="url"
+                  placeholder="e.g., Google Form, event page, or registration link"
+                  value={eventLink}
+                  onChange={(e) => setEventLink(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Add a link to your registration form or event page. Users will see an "Register" button instead of "Join"
+                </p>
               </div>
 
               {/* Date & Time */}
@@ -291,14 +346,14 @@ export default function CreateMeetup() {
                 size="lg"
                 className="w-full"
                 type="submit"
-                disabled={isLoading || !title || !description || !location || !date || !time || !category}
+                disabled={isLoading || !title || !description || !location || !date || !time || !categories}
               >
                 {isLoading ? (
                   "Creating..."
                 ) : (
                   <>
                     <Send className="w-5 h-5 mr-2" />
-                    Create Meetup
+                    Create event
                   </>
                 )}
               </Button>

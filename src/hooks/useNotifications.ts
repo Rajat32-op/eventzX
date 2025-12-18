@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 interface Notification {
   id: string;
   user_id: string;
-  type: 'friend_request' | 'meetup_join' | 'meetup_update' | 'community_join' | 'message';
+  type: 'friend_request' | 'event_join' | 'event_update' | 'community_join' | 'message';
   title: string;
   message: string;
   read: boolean;

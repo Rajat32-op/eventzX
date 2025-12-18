@@ -48,7 +48,6 @@ export const requestOTP = async (email: string): Promise<OTPResponse> => {
 
     if (data && data.length > 0) {
       const result = data[0];
-      
       // Send email via Supabase Edge Function
       const emailResponse = await supabase.functions.invoke('send-otp-email', {
         body: { 
