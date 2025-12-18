@@ -40,7 +40,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { EventCard } from "@/components/EventCard";
-import { colleges, cities } from "@/data/colleges";
+import { colleges } from "@/data/colleges";
+
+// Get city for a college
+const getCityForCollege = (collegeName: string): string | null => {
+  const college = colleges.find(c => c.name === collegeName);
+  return college?.city || null;
+};
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -219,13 +225,19 @@ export default function Profile() {
         avatarUrl = publicUrl;
       }
 
+      // For students, derive city from college
+      const isStudent = (profile as any)?.is_student !== false;
+      const cityToSave = isStudent 
+        ? getCityForCollege(editForm.college) || editForm.city
+        : editForm.city;
+
       const { error } = await supabase
         .from('profiles')
         .update({
           name: editForm.name,
           bio: editForm.bio,
-          college: editForm.college,
-          city: editForm.city,
+          college: isStudent ? editForm.college : profile?.college,
+          city: cityToSave,
           avatar_url: avatarUrl,
         })
         .eq('id', user.id);
@@ -354,47 +366,56 @@ export default function Profile() {
                         placeholder="Your name"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="college">College</Label>
-                      <Select
-                        value={editForm.college}
-                        onValueChange={(value) => setEditForm({ ...editForm, college: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your college" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-60">
-                          {colleges.map((c) => (
-                            <SelectItem key={c.id} value={c.name}>
-                              <span className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                  {c.type}
-                                </Badge>
-                                {c.name}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
-                      <Select
-                        value={editForm.city}
-                        onValueChange={(value) => setEditForm({ ...editForm, city: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your city" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-60">
-                          {cities.map((city) => (
-                            <SelectItem key={city} value={city}>
-                              {city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {/* Show college selection only for students */}
+                    {(profile as any)?.is_student !== false && (
+                      <div className="space-y-2">
+                        <Label htmlFor="college">College</Label>
+                        <Select
+                          value={editForm.college}
+                          onValueChange={(value) => {
+                            const city = getCityForCollege(value);
+                            setEditForm({ 
+                              ...editForm, 
+                              college: value,
+                              city: city || editForm.city 
+                            });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your college" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            {colleges.map((c) => (
+                              <SelectItem key={c.id} value={c.name}>
+                                <span className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                    {c.type}
+                                  </Badge>
+                                  {c.name}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {editForm.college && getCityForCollege(editForm.college) && (
+                          <p className="text-xs text-muted-foreground">
+                            City: {getCityForCollege(editForm.college)}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {/* Show city selection only for non-students */}
+                    {(profile as any)?.is_student === false && (
+                      <div className="space-y-2">
+                        <Label htmlFor="city">City</Label>
+                        <Input
+                          id="city"
+                          value={editForm.city}
+                          onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                          placeholder="Enter your city"
+                        />
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="bio">Bio</Label>
                       <Textarea

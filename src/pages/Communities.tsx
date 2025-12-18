@@ -32,6 +32,7 @@ import {
   Loader2,
   Plus,
   MessageCircle,
+  Earth,
 } from "lucide-react";
 import { useCommunities } from "@/hooks/useCommunities";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +43,7 @@ export default function Communities() {
   const [newCommunity, setNewCommunity] = useState({
     name: "",
     description: "",
-    type: "Interest",
+    type: "Campus",
   });
   const { communities, loading, joinCommunity, createCommunity } = useCommunities();
   const navigate = useNavigate();
@@ -50,9 +51,10 @@ export default function Communities() {
   const displayCommunities = communities;
 
   const campusCommunities = displayCommunities.filter(
-    (c) => c.type === "Campus" || c.type === "Interest"
+    (c) => c.type === "Campus"
   );
   const cityCommunities = displayCommunities.filter((c) => c.type === "City");
+  const nationalCommunities = displayCommunities.filter((c) => c.type === "National");
 
   const filterCommunities = (communityList: typeof communities) =>
     communityList.filter(
@@ -118,7 +120,7 @@ export default function Communities() {
               <div className="flex items-center gap-2 mb-4">
                 <GraduationCap className="w-5 h-5 text-primary" />
                 <h2 className="font-display font-semibold text-lg text-foreground">
-                  Campus & Interest Circles
+                  Campus Circles
                 </h2>
               </div>
               {filterCommunities(campusCommunities).length === 0 ? (
@@ -304,6 +306,105 @@ export default function Communities() {
                 </div>
               )}
             </section>
+
+            {/* National Communities */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Earth className="w-5 h-5 text-secondary" />
+                <h2 className="font-display font-semibold text-lg text-foreground">
+                  National Circles
+                </h2>
+              </div>
+              {filterCommunities(nationalCommunities).length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No national circles yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filterCommunities(nationalCommunities).map((community, index) => (
+                    <Card
+                      key={community.id}
+                      className="border-border/50 hover:border-secondary/50 transition-all duration-300 hover:glow-purple animate-fade-up overflow-hidden"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <Avatar className="w-14 h-14 rounded-xl">
+                              <AvatarImage src={community.image_url} />
+                              <AvatarFallback className="rounded-xl bg-secondary/20 text-secondary font-semibold">
+                                {community.name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            {community.is_joined && (
+                              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-secondary flex items-center justify-center">
+                                <CheckCircle className="w-3.5 h-3.5 text-foreground" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-display font-semibold text-foreground truncate">
+                              {community.name}
+                            </h3>
+                            <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
+                              {community.description}
+                            </p>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Users className="w-3.5 h-3.5" />
+                                <span>
+                                  {community.member_count.toLocaleString()} members
+                                </span>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-2 py-0 border-secondary/50 text-secondary"
+                              >
+                                🌍 {community.type}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            {community.is_joined && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  navigate(`/chat/community/${community.id}`)
+                                }
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant={community.is_joined ? "outline" : "secondary"}
+                              size="sm"
+                              onClick={() => joinCommunity(community.id)}
+                              className={
+                                community.is_joined
+                                  ? ""
+                                  : "bg-secondary hover:bg-secondary/90"
+                              }
+                            >
+                              {community.is_joined ? (
+                                "Leave"
+                              ) : (
+                                <>
+                                  <Sparkles className="w-4 h-4 mr-1" />
+                                  Join
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </section>
           </>
         )}
 
@@ -366,9 +467,9 @@ export default function Communities() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Interest">Interest</SelectItem>
                         <SelectItem value="Campus">Campus</SelectItem>
                         <SelectItem value="City">City</SelectItem>
+                        <SelectItem value="National">National</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

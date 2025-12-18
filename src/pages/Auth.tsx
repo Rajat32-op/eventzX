@@ -362,7 +362,7 @@ Hackathons, competitions, clubs, workshops, sports, and everything happening aro
           <CardHeader className="text-center">
             <CardTitle className="font-display text-2xl">Welcome</CardTitle>
             <CardDescription>
-              Sign in or create an account with your college email
+              Sign in or create an account with your email
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -381,7 +381,7 @@ Hackathons, competitions, clubs, workshops, sports, and everything happening aro
                       <Input
                         id="signin-email"
                         type="email"
-                        placeholder="your.email@college.edu"
+                        placeholder="your.email@example.com"
                         className="pl-10"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -567,13 +567,13 @@ Hackathons, competitions, clubs, workshops, sports, and everything happening aro
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">College Email</Label>
+                    <Label htmlFor="signup-email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="signup-email"
                         type="email"
-                        placeholder="your.email@college.edu"
+                        placeholder="your.email@example.com"
                         className="pl-10"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}

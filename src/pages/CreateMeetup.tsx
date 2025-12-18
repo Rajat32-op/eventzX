@@ -100,12 +100,12 @@ export default function Createevent() {
 
       if (error) throw error;
 
-      // Auto-join creator to the event
+      // Auto-join creator to the event (use upsert to avoid errors)
       if (data && data[0]) {
-        await supabase.from("event_attendees").insert({
+        await supabase.from("event_attendees").upsert({
           event_id: data[0].id,
           user_id: user.id,
-        });
+        }, { onConflict: 'event_id,user_id', ignoreDuplicates: true });
       }
 
       toast({
@@ -160,7 +160,7 @@ export default function Createevent() {
           <CardContent>
             <form onSubmit={handleSubmit}>
               <div className="space-y-3">
-                <Label>What type of event? (select all that apply)</Label>
+                <Label>What type of event? (select all that apply, at least one)</Label>
                 <div className="flex flex-wrap gap-2">
                   {eventTypes.map((type) => (
                     <Badge
@@ -247,14 +247,13 @@ export default function Createevent() {
 
               {/* Description */}
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Description (optional)</Label>
                 <Textarea
                   id="description"
                   placeholder="What's this event about? Any requirements?"
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  required
                 />
               </div>
 
@@ -264,12 +263,12 @@ export default function Createevent() {
                 <Input
                   id="eventLink"
                   type="url"
-                  placeholder="e.g., Google Form, event page, or registration link"
+                  placeholder="https://forms.google.com/..."
                   value={eventLink}
                   onChange={(e) => setEventLink(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Add a link to your registration form or event page. Users will see an "Register" button instead of "Join"
+                  Add complete URL with https:// for registration form or event page. Users will see an "Register" button instead of "Join"
                 </p>
               </div>
 
@@ -346,7 +345,7 @@ export default function Createevent() {
                 size="lg"
                 className="w-full"
                 type="submit"
-                disabled={isLoading || !title || !description || !location || !date || !time || !categories}
+                disabled={isLoading || !title || !location || !date || !time || categories.length === 0}
               >
                 {isLoading ? (
                   "Creating..."
