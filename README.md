@@ -1,73 +1,156 @@
-# Welcome to your Lovable project
+# EventzX
 
-## Project info
+A modern event discovery and community platform for college students and city communities in India. Create, discover, and join events happening around you.
 
-**URL**: https://lovable.dev/projects/ee9cefa9-91ce-4319-882b-491c9bf22f66
+## Features
 
-## How can I edit this code?
+### 🎉 Events
+- **Create Events** - Post hackathons, competitions, meetups, workshops, and more
+- **Multi-Scope Visibility** - Show events at Campus, City, or National level
+- **Event Categories** - Hackathons, Sports, Cultural, Study Groups, Clubs, Travel, Volunteering, Wellness, Workshops
+- **Registration Links** - Add external Google Form or event page links
+- **Join/Leave Events** - Track attendees with optional capacity limits
 
-There are several ways of editing your application.
+### 👥 Circles (Communities)
+- **Campus Circles** - Connect with your college community
+- **City Circles** - Join city-wide communities
+- **National Circles** - Pan-India communities visible to everyone
+- **Group Chat** - Real-time messaging within circles
 
-**Use Lovable**
+### 💬 Chat & Messaging
+- **Direct Messages** - Chat with connections
+- **Community Chat** - Group messaging in circles
+- **Real-time Updates** - Instant message delivery
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ee9cefa9-91ce-4319-882b-491c9bf22f66) and start prompting.
+### 🔔 Notifications
+- Event join notifications
+- Friend request alerts
+- Unread message counts
 
-Changes made via Lovable will be committed automatically to this repo.
+### 👤 User Profiles
+- **Student Flow** - College-based onboarding with auto city detection
+- **Non-Student Flow** - City-based community access
+- **Friend Connections** - Send/accept friend requests
+- **Profile Customization** - Avatar upload, bio, interests
 
-**Use your preferred IDE**
+### 🎨 UI/UX
+- **Dark/Light Theme** - Toggle between themes
+- **Responsive Design** - Mobile-first approach
+- **Modern UI** - Glassmorphism effects, smooth animations
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+| Category | Technology |
+|----------|------------|
+| **Frontend** | React 18, TypeScript, Vite |
+| **Styling** | Tailwind CSS, shadcn/ui |
+| **Backend** | Supabase (PostgreSQL + Auth + Storage + Edge Functions) |
+| **State Management** | React Query, React Context |
+| **Email** | Brevo SMTP API |
 
-Follow these steps:
+## Project Structure
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```
+src/
+├── components/          # Reusable UI components
+│   ├── layout/         # AppLayout, BottomNav
+│   └── ui/             # shadcn/ui components
+├── contexts/           # AuthContext, ThemeContext, UnreadCountContext
+├── hooks/              # Custom hooks (useEvents, useCommunities, useMessages, etc.)
+├── pages/              # Route pages
+│   ├── Auth.tsx        # Sign in/Sign up with OTP verification
+│   ├── Index.tsx       # Home feed (Campus/City/National tabs)
+│   ├── Communities.tsx # Circles listing
+│   ├── CreateMeetup.tsx# Create new event
+│   ├── Chat.tsx        # Messages list
+│   ├── ChatRoom.tsx    # Individual chat room
+│   ├── Profile.tsx     # User profile & settings
+│   └── ...
+├── lib/                # Utilities (cities, colleges, passwordReset)
+├── data/               # Static data (colleges list)
+└── integrations/       # Supabase client & types
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+supabase/
+├── functions/          # Edge Functions
+│   ├── send-otp-email/ # OTP email for signup & password reset
+│   └── reset-password/ # Password update with admin privileges
+├── migrations/         # Database migrations
+└── config.toml         # Supabase config
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Getting Started
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Prerequisites
+- Node.js 18+ 
+- npm or bun
+- Supabase account
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repo-url>
+cd eventzx
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file with:
 
-**Use GitHub Codespaces**
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Supabase Setup
 
-## What technologies are used for this project?
+1. Create a Supabase project
+2. Run migrations: `npx supabase db push`
+3. Deploy edge functions: `npx supabase functions deploy`
+4. Set edge function secrets:
+   - `BREVO_API_KEY` - For email sending
+   - `SMTP_FROM_EMAIL` - Sender email address
+   - `SMTP_FROM_NAME` - Sender name (EventzX)
 
-This project is built with:
+## Scripts
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run lint     # Run ESLint
+```
 
-## How can I deploy this project?
+## Database Tables
 
-Simply open [Lovable](https://lovable.dev/projects/ee9cefa9-91ce-4319-882b-491c9bf22f66) and click on Share -> Publish.
+- `profiles` - User profiles with college, city, interests
+- `events` - Event listings with scope visibility
+- `event_attendees` - Event membership
+- `communities` - Circles (Campus/City/National)
+- `community_members` - Circle membership
+- `messages` - Chat messages
+- `friend_requests` - Connection requests
+- `notifications` - User notifications
+- `colleges` - College directory
+- `cities` - City directory
+- `otp_codes` - Email verification codes
+- `password_reset_otps` - Password reset codes
 
-## Can I connect a custom domain to my Lovable project?
+## Deployment
 
-Yes, you can!
+Deployed on Vercel with Supabase backend.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+npm run build
+# Deploy to Vercel
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## License
+
+MIT

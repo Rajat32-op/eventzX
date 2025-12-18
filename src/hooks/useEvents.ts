@@ -126,10 +126,10 @@ export function useevents() {
         return;
       }
 
-      // Join event
+      // Join event (use upsert to avoid duplicate key errors)
       const { error } = await supabase
         .from("event_attendees")
-        .insert({ event_id: eventId, user_id: user.id });
+        .upsert({ event_id: eventId, user_id: user.id }, { onConflict: 'event_id,user_id' });
 
       if (error) {
         toast({ title: "Error", description: "Failed to join event", variant: "destructive" });
