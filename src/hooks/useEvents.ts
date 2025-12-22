@@ -37,7 +37,39 @@ export function useevents() {
   const { toast } = useToast();
   const { createNotification } = useNotifications();
 
+  const fetchPublicEvents = async () => {
+    try {
+      // Fetch public national events via edge function (bypasses RLS)
+      const { data, error } = await supabase.functions.invoke('get-public-events', {
+        body: {}
+      });
+
+      if (error) {
+        console.error("Error fetching public events:", error);
+        setevents([]);
+        return;
+      }
+      
+      if (data?.success && data?.events) {
+        setevents(data.events as event[]);
+      } else {
+        console.error("Error fetching public events:", data?.message);
+        setevents([]);
+      }
+    } catch (error) {
+      console.error("Error fetching public events:", error);
+      setevents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchevents = async () => {
+    // If no user, fetch public events via edge function
+    if (!user) {
+      return fetchPublicEvents();
+    }
+
     try {
       // Fetch events with creator info, ordered by most recent first
       const { data: eventsData, error: eventsError } = await supabase

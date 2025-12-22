@@ -42,11 +42,7 @@ const App = () => (
                 <Onboarding />
               </ProtectedRoute>
             } />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
+            <Route path="/" element={<Index />} />
             <Route path="/create" element={
               <ProtectedRoute>
                 <Createevent />

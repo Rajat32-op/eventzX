@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Star, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function FeedbackDialog() {
   const [open, setOpen] = useState(false);
@@ -24,6 +26,17 @@ export function FeedbackDialog() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleFeedbackClick = () => {
+    if (!user) {
+      navigate('/auth', { state: { from: location } });
+      return;
+    }
+    setOpen(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +101,7 @@ border-0 overflow-hidden mt-6">
             <h3 className="text-foreground/80 text-xl font-bold mb-4">
               Help Us Improve EventzX
             </h3>
-            <Button variant="glass" className="text-white" onClick={() => { setOpen(true) }}>
+            <Button variant="glass" className="text-white" onClick={handleFeedbackClick}>
               <MessageSquare className="w-4 h-4 mr-2" />
               Give Feedback
             </Button>
