@@ -200,9 +200,11 @@ export default function Index() {
                 <h1 className="font-display font-bold text-lg text-foreground">EventzX</h1>
                 <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
                   <MapPin className="w-3 h-3" />
-                  {(profile as any)?.is_student !== false
-                    ? (profile?.college || "Select Campus")
-                    : (profile?.city || "Select City")
+                  {user
+                    ? ((profile as any)?.is_student !== false
+                        ? (profile?.college || "Select Campus")
+                        : (profile?.city || "Select City"))
+                    : "India"
                   }
                 </button>
               </div>
@@ -220,23 +222,35 @@ export default function Index() {
                   <Moon className="w-5 h-5 text-slate-700" />
                 )}
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-                onClick={() => navigate("/notifications")}
-              >
-                <Bell className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-secondary rounded-full flex items-center justify-center text-[10px] font-bold text-foreground px-1">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </Button>
-              <Avatar className="w-9 h-9 border-2 border-primary/30 cursor-pointer" onClick={() => navigate("/profile")}>
-                <AvatarImage src={profile?.avatar_url} />
-                <AvatarFallback className="bg-primary/20 text-primary font-semibold">{profile?.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
-              </Avatar>
+              {user ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative"
+                    onClick={() => navigate("/notifications")}
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-secondary rounded-full flex items-center justify-center text-[10px] font-bold text-foreground px-1">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                  <Avatar className="w-9 h-9 border-2 border-primary/30 cursor-pointer" onClick={() => navigate("/profile")}>
+                    <AvatarImage src={profile?.avatar_url} />
+                    <AvatarFallback className="bg-primary/20 text-primary font-semibold">{profile?.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                  </Avatar>
+                </>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => navigate("/auth", { state: { from: { pathname: "/" } } })}
+                >
+                  Login
+                </Button>
+              )}
             </div>
           </div>
           <div className="relative">
@@ -380,28 +394,60 @@ export default function Index() {
       </header>
 
       <div className="container px-4 py-6">
-        {/* For students: show Campus, City, and National feeds */}
-        {/* For non-students: show City and National feeds */}
+        {/* For logged in students: show Campus, City, and National feeds */}
+        {/* For logged in non-students: show City and National feeds */}
+        {/* For non-logged users: show only National feed */}
         <Tabs
           key={(profile as any)?.is_student}
-          defaultValue={(profile as any)?.is_student === false ? "city" : "campus"}
+          defaultValue="national"
           className="mb-6"
         >
-          {(profile as any)?.is_student !== false && (
+          {user && (profile as any)?.is_student !== false && (
             <TabsList className="w-full grid grid-cols-3 mb-4">
               <TabsTrigger value="national" className="font-display">🌍 National</TabsTrigger>
               <TabsTrigger value="campus" className="font-display">🎓 Campus</TabsTrigger>
               <TabsTrigger value="city" className="font-display">🌆 City</TabsTrigger>
             </TabsList>
           )}
-          {(profile as any)?.is_student === false && (
+          {user && (profile as any)?.is_student === false && (
             <TabsList className="w-full grid grid-cols-2 mb-4">
-              <TabsTrigger value="city" className="font-display">🌆 City</TabsTrigger>
               <TabsTrigger value="national" className="font-display">🌍 National</TabsTrigger>
+              <TabsTrigger value="city" className="font-display">🌆 City</TabsTrigger>
+            </TabsList>
+          )}
+          {!user && (
+            <TabsList className="w-full grid grid-cols-3 mb-4">
+              <TabsTrigger value="national" className="font-display">🌍 National</TabsTrigger>
+              <TabsTrigger value="campus" className="font-display">🎓 Campus</TabsTrigger>
+              <TabsTrigger value="city" className="font-display">🌆 City</TabsTrigger>
             </TabsList>
           )}
 
-          {(profile as any)?.is_student !== false && (
+          {/* Campus tab for non-logged users - show login prompt */}
+          {!user && (
+            <TabsContent value="campus" className="mt-0">
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">Login to see campus events from your college</p>
+                <Button variant="default" onClick={() => navigate("/auth", { state: { from: { pathname: "/" } } })}>
+                  Login to Continue
+                </Button>
+              </div>
+            </TabsContent>
+          )}
+
+          {/* City tab for non-logged users - show login prompt */}
+          {!user && (
+            <TabsContent value="city" className="mt-0">
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">Login to see events from your city</p>
+                <Button variant="default" onClick={() => navigate("/auth", { state: { from: { pathname: "/" } } })}>
+                  Login to Continue
+                </Button>
+              </div>
+            </TabsContent>
+          )}
+
+          {user && (profile as any)?.is_student !== false && (
             <TabsContent value="campus" className="mt-0">
               <div className="flex gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
                 {categories.map((category) => (
@@ -451,53 +497,55 @@ export default function Index() {
             </TabsContent>
           )}
 
-          <TabsContent value="city" className="mt-0">
-            <div className="flex gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-              {categories.map((category) => (
-                <Badge
-                  key={category.id}
-                  variant={activeCategories.includes(category.id) ? "default" : "interest"}
-                  className="cursor-pointer whitespace-nowrap shrink-0 transition-all"
-                  onClick={() => {
-                    setActiveCategories(prev =>
-                      prev.includes(category.id)
-                        ? prev.filter(c => c !== category.id)
-                        : [...prev, category.id]
-                    );
-                  }}
-                >
-                  {category.name}
-                </Badge>
-              ))}
-            </div>
-
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            ) : filteredCityevents.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No events found</p>
-                <Button variant="outline" className="mt-4" onClick={() => navigate("/create")}>Create the first one!</Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredCityevents.map((event, index) => (
-                  <div key={event.id} className="animate-fade-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                    <EventCard
-                      event={{
-                        ...event,
-                        isJoined: event.is_joined,
-                        isOwner: event.creator_id === user?.id,
-                        onJoin: () => !event.id.startsWith("city-") && joinevent(event.id),
-                        onDelete: () => deleteevent(event.id)
-                      }}
-                    />
-                  </div>
+          {user && (
+            <TabsContent value="city" className="mt-0">
+              <div className="flex gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                {categories.map((category) => (
+                  <Badge
+                    key={category.id}
+                    variant={activeCategories.includes(category.id) ? "default" : "interest"}
+                    className="cursor-pointer whitespace-nowrap shrink-0 transition-all"
+                    onClick={() => {
+                      setActiveCategories(prev =>
+                        prev.includes(category.id)
+                          ? prev.filter(c => c !== category.id)
+                          : [...prev, category.id]
+                      );
+                    }}
+                  >
+                    {category.name}
+                  </Badge>
                 ))}
               </div>
-            )}
-          </TabsContent>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : filteredCityevents.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No events found</p>
+                  <Button variant="outline" className="mt-4" onClick={() => navigate("/create")}>Create the first one!</Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredCityevents.map((event, index) => (
+                    <div key={event.id} className="animate-fade-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                      <EventCard
+                        event={{
+                          ...event,
+                          isJoined: event.is_joined,
+                          isOwner: event.creator_id === user?.id,
+                          onJoin: () => !event.id.startsWith("city-") && joinevent(event.id),
+                          onDelete: () => deleteevent(event.id)
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          )}
 
           <TabsContent value="national" className="mt-0">
             <div className="flex gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">

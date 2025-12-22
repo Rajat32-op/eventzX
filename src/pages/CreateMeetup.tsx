@@ -34,9 +34,9 @@ export default function Createevent() {
   const [categories, setCategories] = useState<string[]>([]);
   const [eventLink, setEventLink] = useState("");
   const [maxAttendees, setMaxAttendees] = useState("");
-  const [showInCampus, setShowInCampus] = useState(true);
+  const [showInCampus, setShowInCampus] = useState(false);
   const [showInCity, setShowInCity] = useState(false);
-  const [showNational, setShowNational] = useState(false);
+  const [showNational, setShowNational] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
