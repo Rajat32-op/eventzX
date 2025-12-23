@@ -22,7 +22,7 @@ export const colleges = [
   { id: "iit-bhilai", name: "IIT Bhilai", city: "Bhilai", type: "IIT" },
   { id: "iit-goa", name: "IIT Goa", city: "Goa", type: "IIT" },
   { id: "iit-jammu", name: "IIT Jammu", city: "Jammu", type: "IIT" },
-  
+
   // NITs
   { id: "nit-trichy", name: "NIT Trichy", city: "Trichy", type: "NIT" },
   { id: "nit-warangal", name: "NIT Warangal", city: "Warangal", type: "NIT" },
@@ -34,7 +34,7 @@ export const colleges = [
   { id: "nit-jaipur", name: "MNIT Jaipur", city: "Jaipur", type: "NIT" },
   { id: "nit-nagpur", name: "VNIT Nagpur", city: "Nagpur", type: "NIT" },
   { id: "nit-surat", name: "SVNIT Surat", city: "Surat", type: "NIT" },
-  
+
   // IIITs
   { id: "iiit-hyderabad", name: "IIIT Hyderabad", city: "Hyderabad", type: "IIIT" },
   { id: "iiit-bangalore", name: "IIIT Bangalore", city: "Bangalore", type: "IIIT" },
@@ -42,7 +42,7 @@ export const colleges = [
   { id: "iiit-allahabad", name: "IIIT Allahabad", city: "Prayagraj", type: "IIIT" },
   { id: "iiit-gwalior", name: "IIIT Gwalior", city: "Gwalior", type: "IIIT" },
   { id: "iiit-jabalpur", name: "IIIT Jabalpur", city: "Jabalpur", type: "IIIT" },
-  
+
   // IIMs
   { id: "iim-calcutta", name: "IIM Calcutta", city: "Kolkata", type: "IIM" },
   { id: "iim-ahmedabad", name: "IIM Ahmedabad", city: "Ahmedabad", type: "IIM" },
@@ -145,7 +145,7 @@ export const colleges = [
   { id: "jntu-kakinada", name: "JNTU Kakinada", city: "Kakinada", type: "State" },
   { id: "jntu-anantapur", name: "JNTU Anantapur", city: "Anantapur", type: "State" },
   { id: "jntu-vizianagaram", name: "JNTU Gurajada Vizianagaram", city: "Vizianagaram", type: "State" },
-  
+
   // IISERs
   { id: "iiser-pune", name: "IISER Pune", city: "Pune", type: "IISER" },
   { id: "iiser-kolkata", name: "IISER Kolkata", city: "Kolkata", type: "IISER" },
@@ -154,7 +154,7 @@ export const colleges = [
   { id: "iiser-thiruvananthapuram", name: "IISER Thiruvananthapuram", city: "Thiruvananthapuram", type: "IISER" },
   { id: "iiser-tirupati", name: "IISER Tirupati", city: "Tirupati", type: "IISER" },
   { id: "iiser-berhampur", name: "IISER Berhampur", city: "Berhampur", type: "IISER" },
-  
+
   // Top Private Universities
   // VIT
   { id: "vit-vellore", name: "VIT Vellore", city: "Vellore", type: "Private" },
@@ -316,9 +316,10 @@ export const colleges = [
 export const interests = [
   { id: "hackathons-tech", name: "Hackathons & Tech", emoji: "💻" },
   { id: "competitions-challenges", name: "Competitions & Challenges", emoji: "🏆" },
+  { id: "Academia", name: "Academia", emoji: "🏫" },
+  { id: "Career", name: "Career", emoji: "🎯" },
   { id: "sports-fitness", name: "Sports & Fitness", emoji: "⚽" },
   { id: "cultural-social", name: "Cultural & Social", emoji: "🎭" },
-  { id: "study-project-groups", name: "Study & Project Groups", emoji: "📚" },
   { id: "clubs-communities", name: "Clubs & Communities", emoji: "👥" },
   { id: "travel-cab-sharing", name: "Travel & Cab Sharing", emoji: "🚗" },
   { id: "volunteering-social-good", name: "Volunteering & Social Good", emoji: "🤝" },

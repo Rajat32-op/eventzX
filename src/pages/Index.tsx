@@ -45,9 +45,10 @@ import { cn } from "@/lib/utils";
 export const categories = [
   { id: "hackathons-tech", name: "Hackathons & Tech", },
   { id: "competitions-challenges", name: "Competitions & Challenges", },
+  { id: "Academia", name: "Academia"},
+  { id: "Career", name: "Career"},  
   { id: "sports-fitness", name: "Sports & Fitness", },
   { id: "cultural-social", name: "Cultural & Social", },
-  { id: "study-project-groups", name: "Study & Project Groups", },
   { id: "clubs-communities", name: "Clubs & Communities", },
   { id: "travel-cab-sharing", name: "Travel & Cab Sharing", },
   { id: "volunteering-social-good", name: "Volunteering & Social Good", },

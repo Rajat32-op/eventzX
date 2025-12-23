@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Sparkles, MapPin, Clock, Users, Send } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ArrowLeft, Sparkles, MapPin, Clock, Users, Send, Globe, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ export default function Createevent() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [isOnline, setIsOnline] = useState<boolean>(true);
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
@@ -86,7 +88,8 @@ export default function Createevent() {
         title,
         description,
         category: categories.join(','), // Store multiple categories as comma-separated
-        location,
+        location: isOnline ? null : (location || null),
+        is_online: isOnline,
         date,
         time,
         event_link: eventLink || null,
@@ -140,9 +143,6 @@ export default function Createevent() {
               <h1 className="font-display font-bold text-lg text-foreground">
                 Create event
               </h1>
-              <p className="text-xs text-muted-foreground">
-                Bring your campus together
-              </p>
             </div>
           </div>
         </div>
@@ -272,51 +272,91 @@ export default function Createevent() {
                 </p>
               </div>
 
-              {/* Date & Time */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
-                  <div className="relative">
-                    <Input
-                      id="date"
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      required
-                    />
+              {/* Date & Time (Registration Deadline) */}
+              <div className="space-y-2 my-2">
+                <Label>Registration Deadline</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="date" className="text-xs text-muted-foreground">Date</Label>
+                    <div className="relative">
+                      <Input
+                        id="date"
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="time" className="text-xs text-muted-foreground">Time</Label>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="time"
+                        type="time"
+                        className="pl-10"
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time">Time</Label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="time"
-                      type="time"
-                      className="pl-10"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Last date and time for users to register/join this event
+                </p>
               </div>
 
-              {/* Location */}
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="location"
-                    placeholder="e.g., Campus Garden, H4 Terrace"
-                    className="pl-10"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    required
-                  />
-                </div>
+              {/* Event Mode (Online/Offline) */}
+              <div className="space-y-4 my-3">
+                <Label>Event Mode</Label>
+                <RadioGroup
+                  value={isOnline ? "online" : "offline"}
+                  onValueChange={(value) => {
+                    setIsOnline(value === "online");
+                    if (value === "online") {
+                      setLocation("");
+                    }
+                  }}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="online" id="online" />
+                    <Label htmlFor="online" className="flex items-center gap-1.5 cursor-pointer">
+                      <Globe className="w-4 h-4 text-primary" />
+                      Online
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="offline" id="offline" />
+                    <Label htmlFor="offline" className="flex items-center gap-1.5 cursor-pointer">
+                      <Building2 className="w-4 h-4 text-accent" />
+                      Offline
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
+
+              {/* Location (only for offline events) */}
+              {!isOnline && (
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location (optional)</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="location"
+                      placeholder="e.g., Campus Garden, H4 Terrace"
+                      className="pl-10"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    You can share the exact location later or in the description
+                  </p>
+                </div>
+              )}
 
               {/* Max Attendees */}
               <div className="space-y-2">
@@ -345,7 +385,7 @@ export default function Createevent() {
                 size="lg"
                 className="w-full"
                 type="submit"
-                disabled={isLoading || !title || !location || !date || !time || categories.length === 0}
+                disabled={isLoading || !title || !date || !time || categories.length === 0}
               >
                 {isLoading ? (
                   "Creating..."
