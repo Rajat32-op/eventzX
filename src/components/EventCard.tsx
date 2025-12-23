@@ -1,4 +1,4 @@
-import { MapPin, Clock, Users, ChevronRight, Trash2, MessageCircle, Share2, Copy, Check } from "lucide-react";
+import { MapPin, Clock, Users, ChevronRight, Trash2, MessageCircle, Share2, Copy, Check, Globe } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ export function EventCard(props: eventCardProps) {
   const { toast } = useToast();
   
   // Check if we received a event object or individual props
-  let title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined, isOwner, creatorId, fullevent, eventLink;
+  let title, description, time, location, category, host, attendees, maxAttendees, onJoin, onDelete, isJoined, isOwner, creatorId, fullevent, eventLink, isOnline;
   
   if ('event' in props) {
     const { event } = props;
@@ -72,6 +72,7 @@ export function EventCard(props: eventCardProps) {
     description = event.description;
     time = formateventTime(event.date, event.time);
     location = event.location;
+    isOnline = event.is_online;
     category = event.category;
     host = {
       name: event.creator?.name || 'Unknown',
@@ -103,12 +104,12 @@ export function EventCard(props: eventCardProps) {
             </Badge>
 
             {/* Title */}
-            <h3 className="font-display font-semibold text-lg text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+            <h3 className="font-display font-semibold text-lg mb-2 text-primary transition-colors">
               {title}
             </h3>
 
             {/* Description */}
-            <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+            <p className="text-muted-foreground text-sm mb-4 ">
               {description}
             </p>
 
@@ -118,27 +119,27 @@ export function EventCard(props: eventCardProps) {
                 <Clock className="w-4 h-4 text-primary" />
                 <span>{time}</span>
               </div>
-              <Popover open={isLocationOpen} onOpenChange={setIsLocationOpen}>
-                <PopoverTrigger asChild>
-                  <div className="flex items-center gap-1.5 cursor-pointer hover:text-accent transition-colors">
-                    <MapPin className="w-4 h-4 text-accent" />
-                    <span className="truncate max-w-[150px]">{location}</span>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto max-w-[300px] p-3" align="start">
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                    <p className="text-sm break-words">{location}</p>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <div className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-secondary" />
-                <span>
-                  {attendees}
-                  {maxAttendees && `/${maxAttendees}`} joined
-                </span>
-              </div>
+              {isOnline ? (
+                <div className="flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-accent" />
+                  <span>Online</span>
+                </div>
+              ) : location ? (
+                <Popover open={isLocationOpen} onOpenChange={setIsLocationOpen}>
+                  <PopoverTrigger asChild>
+                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-accent transition-colors">
+                      <MapPin className="w-4 h-4 text-accent" />
+                      <span className="truncate max-w-[150px]">{location}</span>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto max-w-[300px] p-3" align="start">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                      <p className="text-sm break-words">{location}</p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              ) : null}
             </div>
 
             {/* Host info */}

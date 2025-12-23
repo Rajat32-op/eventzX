@@ -352,7 +352,7 @@ Hackathons, competitions, clubs, workshops, sports, and everything happening aro
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border">
               <Compass className="w-4 h-4 text-accent" />
-              <span className="text-sm text-foreground">All Activities</span>
+              <span className="text-sm text-foreground">National Events</span>
             </div>
           </div>
         </div>
@@ -583,7 +583,7 @@ Hackathons, competitions, clubs, workshops, sports, and everything happening aro
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">Create Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -613,18 +613,6 @@ Hackathons, competitions, clubs, workshops, sports, and everything happening aro
             </Tabs>
           </CardContent>
         </Card>
-
-        {/* College badge */}
-        <div className="mt-8 text-center animate-fade-in" style={{ animationDelay: "0.4s" }}>
-          <p className="text-sm text-muted-foreground mb-3">Trusted by students from</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {["IITs", "NITs", "IIITs", "IIMs", "IISERs"].map((type) => (
-              <Badge key={type} variant="outline" className="text-xs">
-                {type}
-              </Badge>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
