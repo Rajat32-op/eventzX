@@ -33,6 +33,10 @@ export default function Onboarding() {
   const [college, setCollege] = useState("");
   const [selectedCollegeName, setSelectedCollegeName] = useState("");
   const [city, setCity] = useState("");
+  const [eventCity, setEventCity] = useState(""); // City preference for events
+  const [eventCitySearch, setEventCitySearch] = useState("");
+  const [showEventCityDropdown, setShowEventCityDropdown] = useState(false);
+  const eventCityDropdownRef = useRef<HTMLDivElement>(null);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [collegeSearch, setCollegeSearch] = useState("");
@@ -97,13 +101,23 @@ export default function Onboarding() {
       if (newCollegeCityDropdownRef.current && !newCollegeCityDropdownRef.current.contains(event.target as Node)) {
         setShowNewCollegeCityDropdown(false);
       }
+      if (eventCityDropdownRef.current && !eventCityDropdownRef.current.contains(event.target as Node)) {
+        setShowEventCityDropdown(false);
+      }
     }
 
-    if (showCollegeDropdown || showCityDropdown || showNewCollegeCityDropdown) {
+    if (showCollegeDropdown || showCityDropdown || showNewCollegeCityDropdown || showEventCityDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [showCollegeDropdown, showCityDropdown, showNewCollegeCityDropdown]);
+  }, [showCollegeDropdown, showCityDropdown, showNewCollegeCityDropdown, showEventCityDropdown]);
+
+  // Filter event cities based on search
+  const filteredEventCities = useMemo(() => {
+    if (!eventCitySearch.trim()) return cities;
+    const searchLower = eventCitySearch.toLowerCase();
+    return cities.filter(c => c.name.toLowerCase().includes(searchLower));
+  }, [eventCitySearch, cities]);
 
   // Filter colleges based on search
   const filteredColleges = useMemo(() => {
@@ -206,7 +220,31 @@ export default function Onboarding() {
         });
         return;
       }
-      // Both students and non-students go to interests (step 3)
+      // For students, set default event city to college city
+      if (isStudent) {
+        const selectedCollege = colleges.find(c => c.id === college);
+        if (selectedCollege) {
+          setEventCity(selectedCollege.city);
+          setEventCitySearch(selectedCollege.city);
+        }
+      } else {
+        // For non-students, set default event city to their city
+        setEventCity(city);
+        setEventCitySearch(city);
+      }
+      // Go to event city selection (step 2)
+      setStep(2);
+      return;
+    }
+    if (step === 2) {
+      if (!eventCity) {
+        toast({
+          title: "Please select a city",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Go to interests (step 3)
       setStep(3);
       return;
     }
@@ -230,11 +268,8 @@ export default function Onboarding() {
       return interest?.name || id;
     });
 
-    // For students, ALWAYS auto-populate city from college data
-    // For non-students, use their manually entered city
-    const finalCity = isStudent && selectedCollege ? selectedCollege.city : city;
-
-    if (!finalCity) {
+    // Use event city for city preference
+    if (!eventCity) {
       toast({
         title: "City is required",
         description: "Please ensure a city is selected.",
@@ -246,7 +281,7 @@ export default function Onboarding() {
     setIsLoading(true);
     const { error } = await updateProfile({
       college: isStudent ? (selectedCollege?.name || college) : null,
-      city: finalCity,
+      city: eventCity, // Use selected event city
       interests: selectedInterestNames,
       is_student: isStudent,
     } as any);
@@ -282,11 +317,11 @@ export default function Onboarding() {
           </div>
           <CardTitle className="font-display text-2xl">Complete Your Profile</CardTitle>
           <p className="text-muted-foreground text-sm">
-            Step {step === 3 ? 2 : step} of 2
+            Step {step} of 3
           </p>
           {/* Progress dots */}
           <div className="flex justify-center gap-2 pt-2">
-            {[1, 3].map((s) => (
+            {[1, 2, 3].map((s) => (
               <div
                 key={s}
                 className={`w-2 h-2 rounded-full transition-all ${
@@ -531,7 +566,86 @@ export default function Onboarding() {
             </div>
           )}
 
+          {/* Step 2: Event City Selection */}
+          {step === 2 && (
+            <div className="space-y-4 animate-fade-up">
+              <div className="flex items-center gap-2 text-foreground">
+                <MapPin className="w-5 h-5 text-accent" />
+                <h3 className="font-display font-semibold">Which city's events do you want to see?</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                You can change this later in your profile settings.
+              </p>
+              
+              <div className="relative" ref={eventCityDropdownRef}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search for a city..."
+                    value={eventCitySearch}
+                    onChange={(e) => {
+                      setEventCitySearch(e.target.value);
+                      setShowEventCityDropdown(true);
+                    }}
+                    onFocus={() => setShowEventCityDropdown(true)}
+                    className="pl-9"
+                  />
+                </div>
+                
+                {showEventCityDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-hidden">
+                    <div className="max-h-48 overflow-y-auto">
+                      {isLoadingCities ? (
+                        <div className="px-4 py-6 text-sm text-center text-muted-foreground">
+                          Loading cities...
+                        </div>
+                      ) : filteredEventCities.length > 0 ? (
+                        filteredEventCities.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => {
+                              setEventCity(c.name);
+                              setEventCitySearch(c.name);
+                              setShowEventCityDropdown(false);
+                            }}
+                            className="w-full px-4 py-2.5 text-left hover:bg-muted transition-colors border-b border-border last:border-b-0"
+                          >
+                            <span className="text-sm">{c.name}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-sm text-center text-muted-foreground">
+                          City not found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
+              {eventCity && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                  <Check className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">{eventCity}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                  Back
+                </Button>
+                <Button 
+                  variant="glow" 
+                  className="flex-1" 
+                  onClick={handleNext}
+                  disabled={!eventCity}
+                >
+                  Continue
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Step 3: Interests */}
           {step === 3 && (
@@ -563,7 +677,7 @@ export default function Onboarding() {
                 {selectedInterests.length} selected
               </p>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
                   Back
                 </Button>
                 <Button 
