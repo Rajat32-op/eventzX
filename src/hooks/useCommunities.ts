@@ -32,7 +32,39 @@ export function useCommunities() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const fetchPublicCommunities = async () => {
+    try {
+      // Fetch public communities via edge function (bypasses RLS)
+      const { data, error } = await supabase.functions.invoke('get-public-communities', {
+        body: {}
+      });
+
+      if (error) {
+        console.error("Error fetching public communities:", error);
+        setCommunities([]);
+        return;
+      }
+      
+      if (data?.success && data?.communities) {
+        setCommunities(data.communities as Community[]);
+      } else {
+        console.error("Error fetching public communities:", data?.message);
+        setCommunities([]);
+      }
+    } catch (error) {
+      console.error("Error fetching public communities:", error);
+      setCommunities([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchCommunities = async () => {
+    // If no user, fetch public communities via edge function
+    if (!user) {
+      return fetchPublicCommunities();
+    }
+
     try {
       // Fetch all communities
       const { data: communitiesData, error: communitiesError } = await supabase

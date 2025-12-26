@@ -288,10 +288,16 @@ export default function Communities() {
     setEditName(community.name);
     setEditDescription(community.description || "");
     setInfoDialogOpen(true);
-    setLoadingMembers(true);
-    const membersList = await fetchMembers(community.id);
-    setMembers(membersList);
-    setLoadingMembers(false);
+    
+    // Only fetch members if user is logged in (RLS requires auth)
+    if (user) {
+      setLoadingMembers(true);
+      const membersList = await fetchMembers(community.id);
+      setMembers(membersList);
+      setLoadingMembers(false);
+    } else {
+      setMembers([]);
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -805,7 +811,21 @@ export default function Communities() {
                     )}
                   </div>
                   
-                  {loadingMembers ? (
+                  {!user ? (
+                    <div className="flex flex-col items-center justify-center py-6 gap-3">
+                      <Users className="w-10 h-10 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground text-center">
+                        Sign in to view members
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate("/auth")}
+                      >
+                        Sign In
+                      </Button>
+                    </div>
+                  ) : loadingMembers ? (
                     <div className="flex justify-center py-4">
                       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
