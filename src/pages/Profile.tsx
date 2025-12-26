@@ -8,13 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -34,6 +27,8 @@ import {
   ArrowLeft,
   Camera,
   Search,
+  Check,
+  Plus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,14 +36,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { EventCard } from "@/components/EventCard";
-import { colleges } from "@/data/colleges";
-import { fetchCities, type City } from "@/lib/cities";
-
-// Get city for a college
-const getCityForCollege = (collegeName: string): string | null => {
-  const college = colleges.find(c => c.name === collegeName);
-  return college?.city || null;
-};
+import { fetchColleges, addCollege, type College } from "@/lib/colleges";
+import { fetchCities, addCity as addCityToDb, type City } from "@/lib/cities";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -73,12 +62,34 @@ export default function Profile() {
     city: '',
   });
   
+  // College dropdown states for students
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [collegeSearch, setCollegeSearch] = useState('');
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const [isLoadingColleges, setIsLoadingColleges] = useState(false);
+  const collegeDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Add college dialog states
+  const [showAddCollegeDialog, setShowAddCollegeDialog] = useState(false);
+  const [newCollegeName, setNewCollegeName] = useState('');
+  const [newCollegeCity, setNewCollegeCity] = useState('');
+  const [newCollegeCitySearch, setNewCollegeCitySearch] = useState('');
+  const [showNewCollegeCityDropdown, setShowNewCollegeCityDropdown] = useState(false);
+  const [newCollegeType, setNewCollegeType] = useState('Other');
+  const [isAddingCollege, setIsAddingCollege] = useState(false);
+  const newCollegeCityDropdownRef = useRef<HTMLDivElement>(null);
+  
   // City dropdown states for non-students
   const [cities, setCities] = useState<City[]>([]);
   const [citySearch, setCitySearch] = useState('');
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
   const cityDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Add city dialog states
+  const [showAddCityDialog, setShowAddCityDialog] = useState(false);
+  const [newCityName, setNewCityName] = useState('');
+  const [isAddingCity, setIsAddingCity] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -89,6 +100,7 @@ export default function Profile() {
         city: profile.city || '',
       });
       setCitySearch(profile.city || '');
+      setCollegeSearch(profile.college || '');
     }
   }, [profile]);
 
@@ -98,9 +110,22 @@ export default function Profile() {
     }
   }, [user]);
 
-  // Fetch cities for non-students
+  // Fetch colleges for students
   useEffect(() => {
-    if ((profile as any)?.is_student === false) {
+    if ((profile as any)?.is_student !== false && isEditOpen) {
+      async function loadColleges() {
+        setIsLoadingColleges(true);
+        const data = await fetchColleges();
+        setColleges(data);
+        setIsLoadingColleges(false);
+      }
+      loadColleges();
+    }
+  }, [profile, isEditOpen]);
+
+  // Fetch cities for everyone (both students and non-students can change event city)
+  useEffect(() => {
+    if (isEditOpen) {
       async function loadCities() {
         setIsLoadingCities(true);
         const data = await fetchCities();
@@ -109,21 +134,27 @@ export default function Profile() {
       }
       loadCities();
     }
-  }, [profile]);
+  }, [isEditOpen]);
 
-  // Handle click outside to close city dropdown
+  // Handle click outside to close dropdowns
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (cityDropdownRef.current && !cityDropdownRef.current.contains(event.target as Node)) {
         setShowCityDropdown(false);
       }
+      if (collegeDropdownRef.current && !collegeDropdownRef.current.contains(event.target as Node)) {
+        setShowCollegeDropdown(false);
+      }
+      if (newCollegeCityDropdownRef.current && !newCollegeCityDropdownRef.current.contains(event.target as Node)) {
+        setShowNewCollegeCityDropdown(false);
+      }
     }
 
-    if (showCityDropdown) {
+    if (showCityDropdown || showCollegeDropdown || showNewCollegeCityDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [showCityDropdown]);
+  }, [showCityDropdown, showCollegeDropdown, showNewCollegeCityDropdown]);
 
   // Filter cities based on search
   const filteredCities = useMemo(() => {
@@ -131,6 +162,118 @@ export default function Profile() {
     const searchLower = citySearch.toLowerCase();
     return cities.filter(c => c.name.toLowerCase().includes(searchLower));
   }, [citySearch, cities]);
+
+  // Filter colleges based on search
+  const filteredColleges = useMemo(() => {
+    if (!collegeSearch.trim()) return colleges;
+    const searchLower = collegeSearch.toLowerCase();
+    return colleges.filter(c => 
+      c.name.toLowerCase().includes(searchLower) || 
+      c.city.toLowerCase().includes(searchLower) ||
+      c.type.toLowerCase().includes(searchLower)
+    );
+  }, [collegeSearch, colleges]);
+
+  // Filter cities for add college dialog
+  const filteredNewCollegeCities = useMemo(() => {
+    if (!newCollegeCitySearch.trim()) return cities;
+    const searchLower = newCollegeCitySearch.toLowerCase();
+    return cities.filter(c => c.name.toLowerCase().includes(searchLower));
+  }, [newCollegeCitySearch, cities]);
+
+  // Get city for a college
+  const getCityForCollege = (collegeName: string): string | null => {
+    const college = colleges.find(c => c.name === collegeName);
+    return college?.city || null;
+  };
+
+  // Add new college handler
+  const handleAddCollege = async () => {
+    if (!newCollegeName.trim() || !newCollegeCity.trim()) {
+      toast({
+        title: "Please fill all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAddingCollege(true);
+    
+    // Check if city exists, if not add it first
+    let cityName = newCollegeCity.trim();
+    const existingCity = cities.find(c => c.name.toLowerCase() === cityName.toLowerCase());
+    if (!existingCity) {
+      const newCity = await addCityToDb(cityName);
+      if (newCity) {
+        setCities(prev => [...prev, newCity]);
+        cityName = newCity.name;
+      }
+    } else {
+      cityName = existingCity.name;
+    }
+    
+    const result = await addCollege(newCollegeName, cityName, newCollegeType);
+    setIsAddingCollege(false);
+
+    if (result.success && result.college) {
+      toast({
+        title: "College added!",
+        description: "Your college has been added to our database.",
+      });
+      // Refresh colleges list
+      const updatedColleges = await fetchColleges();
+      setColleges(updatedColleges);
+      // Select the newly added college
+      setEditForm(prev => ({ ...prev, college: result.college!.name, city: result.college!.city }));
+      setCollegeSearch(result.college.name);
+      setShowAddCollegeDialog(false);
+      setNewCollegeName("");
+      setNewCollegeCity("");
+      setNewCollegeType("Other");
+    } else {
+      toast({
+        title: "Failed to add college",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Add new city handler
+  const handleAddCity = async () => {
+    if (!newCityName.trim()) {
+      toast({
+        title: "Please enter a city name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAddingCity(true);
+    
+    const newCity = await addCityToDb(newCityName.trim());
+    setIsAddingCity(false);
+
+    if (newCity) {
+      toast({
+        title: "City added!",
+        description: "Your city has been added to our database.",
+      });
+      // Refresh cities list and select the new city
+      const updatedCities = await fetchCities();
+      setCities(updatedCities);
+      setEditForm(prev => ({ ...prev, city: newCity.name }));
+      setCitySearch(newCity.name);
+      setShowAddCityDialog(false);
+      setNewCityName("");
+    } else {
+      toast({
+        title: "Failed to add city",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -269,11 +412,7 @@ export default function Profile() {
         avatarUrl = publicUrl;
       }
 
-      // For students, derive city from college
       const isStudent = (profile as any)?.is_student !== false;
-      const cityToSave = isStudent 
-        ? getCityForCollege(editForm.college) || editForm.city
-        : editForm.city;
 
       const { error } = await supabase
         .from('profiles')
@@ -281,7 +420,7 @@ export default function Profile() {
           name: editForm.name,
           bio: editForm.bio,
           college: isStudent ? editForm.college : profile?.college,
-          city: cityToSave,
+          city: editForm.city, // Allow everyone to change city for events
           avatar_url: avatarUrl,
         })
         .eq('id', user.id);
@@ -414,89 +553,156 @@ export default function Profile() {
                     {(profile as any)?.is_student !== false && (
                       <div className="space-y-2">
                         <Label htmlFor="college">College</Label>
-                        <Select
-                          value={editForm.college}
-                          onValueChange={(value) => {
-                            const city = getCityForCollege(value);
-                            setEditForm({ 
-                              ...editForm, 
-                              college: value,
-                              city: city || editForm.city 
-                            });
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your college" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60">
-                            {colleges.map((c) => (
-                              <SelectItem key={c.id} value={c.name}>
-                                <span className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                    {c.type}
-                                  </Badge>
-                                  {c.name}
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {editForm.college && getCityForCollege(editForm.college) && (
-                          <p className="text-xs text-muted-foreground">
-                            City: {getCityForCollege(editForm.college)}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {/* Show city selection only for non-students */}
-                    {(profile as any)?.is_student === false && (
-                      <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
-                        <div className="relative" ref={cityDropdownRef}>
+                        <div className="relative" ref={collegeDropdownRef}>
                           <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
-                              id="city"
-                              placeholder="Search and select your city..."
-                              value={citySearch}
+                              id="college"
+                              placeholder="Search college, city or type..."
+                              value={collegeSearch}
                               onChange={(e) => {
-                                setCitySearch(e.target.value);
-                                setShowCityDropdown(true);
+                                setCollegeSearch(e.target.value);
+                                setShowCollegeDropdown(true);
                               }}
-                              onFocus={() => setShowCityDropdown(true)}
+                              onFocus={() => setShowCollegeDropdown(true)}
                               className="pl-9"
                             />
                           </div>
-                          {showCityDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                              {isLoadingCities ? (
-                                <div className="p-4 text-center text-sm text-muted-foreground">
-                                  Loading cities...
-                                </div>
-                              ) : filteredCities.length > 0 ? (
-                                filteredCities.map((c) => (
-                                  <div
-                                    key={c.id}
-                                    className="px-4 py-2.5 hover:bg-accent/50 cursor-pointer transition-colors border-b border-border last:border-0"
-                                    onClick={() => {
-                                      setEditForm({ ...editForm, city: c.name });
-                                      setCitySearch(c.name);
-                                      setShowCityDropdown(false);
-                                    }}
-                                  >
-                                    <p className="font-medium text-foreground">{c.name}</p>
+                          {showCollegeDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-hidden">
+                              <div className="max-h-60 overflow-y-auto">
+                                {isLoadingColleges ? (
+                                  <div className="px-4 py-6 text-sm text-center text-muted-foreground">
+                                    Loading colleges...
                                   </div>
-                                ))
-                              ) : (
-                                <div className="p-4 text-sm text-center text-muted-foreground">
-                                  {citySearch.trim() ? "City not found" : "Start typing to search"}
-                                </div>
-                              )}
+                                ) : filteredColleges.length > 0 ? (
+                                  filteredColleges.map((c) => (
+                                    <button
+                                      key={c.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setEditForm({ 
+                                          ...editForm, 
+                                          college: c.name,
+                                          city: c.city 
+                                        });
+                                        setCollegeSearch(c.name);
+                                        setShowCollegeDropdown(false);
+                                      }}
+                                      className="w-full px-4 py-2.5 text-left hover:bg-accent/50 transition-colors flex items-center gap-2 border-b border-border last:border-b-0"
+                                    >
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                                        {c.type}
+                                      </Badge>
+                                      <span className="text-sm truncate">{c.name}</span>
+                                      <span className="text-xs text-muted-foreground ml-auto shrink-0">{c.city}</span>
+                                    </button>
+                                  ))
+                                ) : (
+                                  <div className="px-4 py-6 text-sm text-center space-y-3">
+                                    <p className="text-muted-foreground">
+                                      College not found?
+                                    </p>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setShowCollegeDropdown(false);
+                                        setShowAddCollegeDialog(true);
+                                      }}
+                                      className="w-full"
+                                    >
+                                      <Plus className="w-4 h-4 mr-2" />
+                                      Add Your College
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
+                        {editForm.college && getCityForCollege(editForm.college) && (
+                          <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                            <Check className="w-4 h-4 text-primary" />
+                            <span className="text-sm">{editForm.college}</span>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {getCityForCollege(editForm.college)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
+                    {/* City selection for everyone */}
+                    <div className="space-y-2">
+                      <Label htmlFor="city">
+                        City for Events
+                        <span className="text-xs text-muted-foreground ml-2">
+                          (Which city's events do you want to see?)
+                        </span>
+                      </Label>
+                      <div className="relative" ref={cityDropdownRef}>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="city"
+                            placeholder="Search and select your city..."
+                            value={citySearch}
+                            onChange={(e) => {
+                              setCitySearch(e.target.value);
+                              setShowCityDropdown(true);
+                            }}
+                            onFocus={() => setShowCityDropdown(true)}
+                            className="pl-9"
+                          />
+                        </div>
+                        {showCityDropdown && (
+                          <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {isLoadingCities ? (
+                              <div className="p-4 text-center text-sm text-muted-foreground">
+                                Loading cities...
+                              </div>
+                            ) : filteredCities.length > 0 ? (
+                              filteredCities.map((c) => (
+                                <div
+                                  key={c.id}
+                                  className="px-4 py-2.5 hover:bg-accent/50 cursor-pointer transition-colors border-b border-border last:border-0"
+                                  onClick={() => {
+                                    setEditForm({ ...editForm, city: c.name });
+                                    setCitySearch(c.name);
+                                    setShowCityDropdown(false);
+                                  }}
+                                >
+                                  <p className="font-medium text-foreground">{c.name}</p>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="px-4 py-6 text-sm text-center space-y-3">
+                                <p className="text-muted-foreground">
+                                  {citySearch.trim() ? "City not found?" : "Start typing to search"}
+                                </p>
+                                {citySearch.trim() && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setShowCityDropdown(false);
+                                      setNewCityName(citySearch.trim());
+                                      setShowAddCityDialog(true);
+                                    }}
+                                    className="w-full"
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add "{citySearch.trim()}"
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="bio">Bio</Label>
                       <Textarea
@@ -515,6 +721,129 @@ export default function Profile() {
                     <Button onClick={handleSaveProfile} disabled={isSaving}>
                       {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       Save Changes
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Add College Dialog */}
+              <Dialog open={showAddCollegeDialog} onOpenChange={setShowAddCollegeDialog}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add Your College</DialogTitle>
+                    <DialogDescription>
+                      Can't find your college? Add it to our database.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="newCollegeName">College Name</Label>
+                      <Input
+                        id="newCollegeName"
+                        placeholder="Full name of your college"
+                        value={newCollegeName}
+                        onChange={(e) => setNewCollegeName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newCollegeCity">City</Label>
+                      <div className="relative" ref={newCollegeCityDropdownRef}>
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="newCollegeCity"
+                          placeholder="Search or type a city..."
+                          value={newCollegeCitySearch}
+                          onChange={(e) => {
+                            setNewCollegeCitySearch(e.target.value);
+                            setNewCollegeCity(e.target.value);
+                            setShowNewCollegeCityDropdown(true);
+                          }}
+                          onFocus={() => setShowNewCollegeCityDropdown(true)}
+                          className="pl-9"
+                        />
+                        {showNewCollegeCityDropdown && (
+                          <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                            {filteredNewCollegeCities.length > 0 ? (
+                              filteredNewCollegeCities.slice(0, 5).map((c) => (
+                                <div
+                                  key={c.id}
+                                  className="px-4 py-2.5 hover:bg-accent/50 cursor-pointer transition-colors border-b border-border last:border-0"
+                                  onClick={() => {
+                                    setNewCollegeCity(c.name);
+                                    setNewCollegeCitySearch(c.name);
+                                    setShowNewCollegeCityDropdown(false);
+                                  }}
+                                >
+                                  <p className="font-medium text-foreground">{c.name}</p>
+                                </div>
+                              ))
+                            ) : newCollegeCitySearch.trim() ? (
+                              <div className="px-4 py-2.5 text-sm text-muted-foreground">
+                                New city: "{newCollegeCitySearch}" will be added
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newCollegeType">Type</Label>
+                      <select
+                        id="newCollegeType"
+                        value={newCollegeType}
+                        onChange={(e) => setNewCollegeType(e.target.value)}
+                        className="w-full h-10 px-3 py-2 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="IIT">IIT</option>
+                        <option value="NIT">NIT</option>
+                        <option value="IIIT">IIIT</option>
+                        <option value="Central">Central University</option>
+                        <option value="State">State University</option>
+                        <option value="Private">Private</option>
+                        <option value="Deemed">Deemed</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowAddCollegeDialog(false)} disabled={isAddingCollege}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddCollege} disabled={isAddingCollege || !newCollegeName.trim() || !newCollegeCity.trim()}>
+                      {isAddingCollege && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Add College
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Add City Dialog */}
+              <Dialog open={showAddCityDialog} onOpenChange={setShowAddCityDialog}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add Your City</DialogTitle>
+                    <DialogDescription>
+                      Can't find your city? Add it to our database.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="newCityName">City Name</Label>
+                      <Input
+                        id="newCityName"
+                        placeholder="Enter city name"
+                        value={newCityName}
+                        onChange={(e) => setNewCityName(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowAddCityDialog(false)} disabled={isAddingCity}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddCity} disabled={isAddingCity || !newCityName.trim()}>
+                      {isAddingCity && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Add City
                     </Button>
                   </DialogFooter>
                 </DialogContent>
