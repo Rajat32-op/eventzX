@@ -58,11 +58,7 @@ const App = () => (
                 <Discover />
               </ProtectedRoute>
             } />
-            <Route path="/communities" element={
-              <ProtectedRoute>
-                <Communities />
-              </ProtectedRoute>
-            } />
+            <Route path="/communities" element={<Communities />} />
             <Route path="/user/:userId" element={
               <ProtectedRoute>
                 <UserProfile />

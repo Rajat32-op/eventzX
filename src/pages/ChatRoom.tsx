@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Send, Users, Loader2, MoreVertical, Phone, Video, Info } from "lucide-react";
+import { ArrowLeft, Send, Users, Loader2, MoreVertical, Phone, Video, Info, Sparkles, MessageCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -112,27 +112,34 @@ export default function ChatRoom() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg border-b border-border shadow-sm">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-background via-background to-muted/30">
+      {/* Header with gradient */}
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10 dark:from-primary/5 dark:via-accent/5 dark:to-secondary/5 backdrop-blur-xl border-b border-border/50 shadow-sm">
         <div className="container px-4 py-3">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/chat")} className="shrink-0">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate("/chat")} 
+              className="shrink-0 hover:bg-primary/10"
+            >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div 
-              className="relative cursor-pointer"
+              className="relative cursor-pointer group"
               onClick={() => !isCommunity && id && navigate(`/user/${id}`)}
             >
-              <Avatar className="w-10 h-10 border-2 border-primary/20">
-                <AvatarImage src={chatInfo?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                  {chatInfo?.name?.charAt(0).toUpperCase() || "C"}
-                </AvatarFallback>
-              </Avatar>
+              <div className={`p-0.5 rounded-full ${isCommunity ? 'bg-gradient-to-br from-accent to-secondary' : 'bg-gradient-to-br from-primary to-accent'}`}>
+                <Avatar className="w-10 h-10 border-2 border-background">
+                  <AvatarImage src={chatInfo?.avatar_url || undefined} />
+                  <AvatarFallback className={`font-semibold ${isCommunity ? 'bg-accent/20 text-accent' : 'bg-primary/20 text-primary'}`}>
+                    {chatInfo?.name?.charAt(0).toUpperCase() || "C"}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
               {isCommunity && (
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-accent flex items-center justify-center border-2 border-background">
-                  <Users className="w-2.5 h-2.5 text-foreground" />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-accent to-secondary flex items-center justify-center border-2 border-background shadow-sm">
+                  <Users className="w-2.5 h-2.5 text-white" />
                 </div>
               )}
             </div>
@@ -173,7 +180,7 @@ export default function ChatRoom() {
       </header>
 
       {/* Messages */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-background to-muted/20">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {/* Load More Button */}
         {hasMore && !loading && messages.length > 0 && (
           <div className="flex justify-center pb-4">
@@ -181,7 +188,7 @@ export default function ChatRoom() {
               variant="outline"
               size="sm"
               onClick={handleLoadMore}
-              className="rounded-full text-xs"
+              className="rounded-full text-xs bg-background/80 backdrop-blur-sm border-primary/20 hover:border-primary/50"
             >
               Load older messages
             </Button>
@@ -189,17 +196,19 @@ export default function ChatRoom() {
         )}
         
         {loading && messages.length === 0 ? (
-          <div className="text-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
-            <p className="text-muted-foreground mt-2">Loading messages...</p>
+          <div className="text-center py-16">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-pulse">
+              <MessageCircle className="w-6 h-6 text-white" />
+            </div>
+            <p className="text-muted-foreground">Loading messages...</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Send className="w-8 h-8 text-primary" />
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 flex items-center justify-center mb-4">
+              <Send className="w-10 h-10 text-primary" />
             </div>
-            <p className="text-muted-foreground font-medium">No messages yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Send a message to start the conversation!</p>
+            <p className="font-semibold text-foreground">Say Hello! 👋</p>
+            <p className="text-sm text-muted-foreground mt-1">Send a message to start the conversation</p>
           </div>
         ) : (
           messages.map((message, index) => {
@@ -212,7 +221,7 @@ export default function ChatRoom() {
               <div key={message.id}>
                 {showDate && (
                   <div className="flex justify-center my-4">
-                    <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                    <span className="text-xs text-muted-foreground bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10 border border-primary/20 px-4 py-1.5 rounded-full font-medium">
                       {isToday(messageDate) ? 'Today' : 
                        isYesterday(messageDate) ? 'Yesterday' : 
                        format(messageDate, 'MMM d, yyyy')}
@@ -222,20 +231,20 @@ export default function ChatRoom() {
                 <div className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
                   {!isOwn && (
                     <Avatar 
-                      className="w-8 h-8 cursor-pointer"
+                      className="w-8 h-8 cursor-pointer ring-2 ring-primary/20"
                       onClick={() => message.sender?.id && navigate(`/user/${message.sender.id}`)}
                     >
                       <AvatarImage src={message.sender?.avatar_url || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-xs font-semibold">
                         {message.sender?.name?.charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                   )}
                   <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm ${
+                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 shadow-md ${
                       isOwn
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
-                        : "bg-card text-foreground rounded-bl-sm border border-border"
+                        ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-br-sm"
+                        : "bg-card text-foreground rounded-bl-sm border border-primary/10 shadow-primary/5"
                     }`}
                   >
                     {isCommunity && !isOwn && (
@@ -264,21 +273,21 @@ export default function ChatRoom() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border bg-blue-50/95 backdrop-blur-lg dark:glass dark:backdrop-blur-lg p-4 pb-safe">
+      <div className="border-t border-primary/10 bg-gradient-to-r from-primary/5 via-accent/5 to-secondary/5 backdrop-blur-lg p-4 pb-safe">
         <div className="flex items-center gap-3">
           <Input
             placeholder="Type a message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyPress}
-            className="flex-1 rounded-full bg-background/80"
+            className="flex-1 rounded-full bg-background/80 border-primary/20 focus:border-primary focus:ring-primary/20"
             disabled={isSending}
           />
           <Button 
             onClick={handleSend} 
             disabled={!newMessage.trim() || isSending}
             size="icon"
-            className="rounded-full w-10 h-10 shrink-0"
+            className="rounded-full w-10 h-10 shrink-0 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-md"
           >
             {isSending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

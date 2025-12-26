@@ -93,11 +93,11 @@ export function EventCard(props: eventCardProps) {
   return (
     <>
       <Card
-        className="hover:border-primary/50 transition-all duration-300 hover:glow-primary overflow-hidden group"
+        className="hover:border-primary/50 transition-all duration-300 hover:glow-primary overflow-hidden group w-full"
       >
-        <CardContent className="p-5">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex">
+        <CardContent className="p-5 w-full">
+          <div className="flex w-full flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="w-full flex justify-around">
               <div className="flex-1 min-w-0">
                 {/* Category badge */}
                 <Badge variant="interest" className="mb-3">
