@@ -13,9 +13,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-export const eventTypes= [
+export const eventTypes = [
   { id: "hackathons-tech", name: "Hackathons & Tech", emoji: "💻" },
   { id: "competitions-challenges", name: "Competitions & Challenges", emoji: "🏆" },
+  { id: "Academia", name: "Academia", emoji: "🏫" },
+  { id: "Career", name: "Career", emoji: "🎯" },
   { id: "sports-fitness", name: "Sports & Fitness", emoji: "⚽" },
   { id: "cultural-social", name: "Cultural & Social", emoji: "🎭" },
   { id: "study-project-groups", name: "Study & Project Groups", emoji: "📚" },
@@ -23,7 +25,7 @@ export const eventTypes= [
   { id: "travel-cab-sharing", name: "Travel & Cab Sharing", emoji: "🚗" },
   { id: "volunteering-social-good", name: "Volunteering & Social Good", emoji: "🤝" },
   { id: "wellness-lifestyle", name: "Wellness & Lifestyle", emoji: "✨" },
-  {id:"workshops",name:"Workshops",emoji:"🛠️"}
+  { id: "workshops", name: "Workshops", emoji: "🛠️" }
 ];
 
 export default function Createevent() {
@@ -40,14 +42,14 @@ export default function Createevent() {
   const [showInCity, setShowInCity] = useState(false);
   const [showNational, setShowNational] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, profile } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({
         title: "Please sign in",
@@ -81,7 +83,7 @@ export default function Createevent() {
     }
 
     setIsLoading(true);
-    
+
     try {
       const { data, error } = await supabase.from("events").insert({
         creator_id: user.id,
@@ -115,7 +117,7 @@ export default function Createevent() {
         title: "event Created! 🎉",
         description: "Your event is now live. Others can join!",
       });
-      
+
       // Navigate back to home
       navigate("/");
     } catch (error: any) {
@@ -168,7 +170,7 @@ export default function Createevent() {
                       variant={categories.includes(type.id) ? "default" : "interest"}
                       className="cursor-pointer text-sm py-2 px-3 transition-all"
                       onClick={() => {
-                        setCategories(prev => 
+                        setCategories(prev =>
                           prev.includes(type.id)
                             ? prev.filter(c => c !== type.id) // Remove if already selected
                             : [...prev, type.id] // Add if not selected
@@ -185,9 +187,9 @@ export default function Createevent() {
                     {categories.length} {categories.length === 1 ? 'category' : 'categories'} selected
                   </p>
                 )}
-                  
-                </div>
-              
+
+              </div>
+
 
               {/* Campus/City/National Multi-Select */}
               <div className="space-y-3">
@@ -221,11 +223,11 @@ export default function Createevent() {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {showNational 
+                  {showNational
                     ? "Visible to everyone across India"
-                    : showInCampus && showInCity 
+                    : showInCampus && showInCity
                       ? "Visible to both your campus students and city community"
-                      : showInCampus 
+                      : showInCampus
                         ? "Only visible to students from your campus"
                         : showInCity
                           ? "Only visible to your city community"
