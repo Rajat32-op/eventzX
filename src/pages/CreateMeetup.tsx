@@ -20,7 +20,6 @@ export const eventTypes = [
   { id: "Career", name: "Career", emoji: "🎯" },
   { id: "sports-fitness", name: "Sports & Fitness", emoji: "⚽" },
   { id: "cultural-social", name: "Cultural & Social", emoji: "🎭" },
-  { id: "study-project-groups", name: "Study & Project Groups", emoji: "📚" },
   { id: "clubs-communities", name: "Clubs & Communities", emoji: "👥" },
   { id: "travel-cab-sharing", name: "Travel & Cab Sharing", emoji: "🚗" },
   { id: "volunteering-social-good", name: "Volunteering & Social Good", emoji: "🤝" },
