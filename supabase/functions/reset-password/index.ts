@@ -50,13 +50,15 @@ serve(async (req: Request) => {
       }
     })
 
-    // Verify the OTP is still valid (not used/expired)
+    const normalizedEmail = email.toLowerCase().trim()
+
+    // Verify the OTP is still valid (should already be marked as used by verify function)
     const { data: otpData, error: otpError } = await supabaseAdmin
       .from('password_reset_otps')
       .select('*')
-      .eq('email', email.toLowerCase().trim())
+      .eq('email', normalizedEmail)
       .eq('code', code)
-      .eq('is_used', true) // Should already be marked as used by verify function
+      .eq('is_used', true)
       .gte('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(1)
@@ -72,23 +74,15 @@ serve(async (req: Request) => {
       )
     }
 
-    // Get user by email
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers()
-    
-    if (userError) {
-      console.error('Error fetching users:', userError)
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          message: 'Failed to fetch user data' 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
-    const user = userData.users.find(u => u.email?.toLowerCase() === email.toLowerCase().trim())
+    // Get user ID from profiles table (profiles.id = auth.users.id)
+    const { data: profileData, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .ilike('email', normalizedEmail)
+      .single()
 
-    if (!user) {
+    if (profileError || !profileData) {
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -100,7 +94,7 @@ serve(async (req: Request) => {
 
     // Update user password using admin API
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
+      profileData.id,
       { password }
     )
 
@@ -119,7 +113,7 @@ serve(async (req: Request) => {
     await supabaseAdmin
       .from('password_reset_otps')
       .update({ is_used: true })
-      .eq('email', email.toLowerCase().trim())
+      .eq('email', normalizedEmail)
       .eq('is_used', false)
 
     return new Response(
